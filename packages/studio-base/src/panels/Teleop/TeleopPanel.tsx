@@ -289,17 +289,12 @@ function TeleopPanel(props: TeleopPanelProps): JSX.Element {
 
     const intervalMs = (1000 * 1) / config.publishRate;
 
-    if (config.stamped) {
-      context.publish?.(currentTopic, message);
-      const intervalHandle = setInterval(() => {
-        context.publish?.(currentTopic, message);
-      }, intervalMs);
-    } else {
-      context.publish?.(currentTopic, message.twist);
-      const intervalHandle = setInterval(() => {
-        context.publish?.(currentTopic, message.twist);
-      }, intervalMs);
-    }
+    const messageToSend = stamped ? message : message.twist;
+
+    context.publish?.(currentTopic, messageToSend);
+    const intervalHandle = setInterval(() => {
+      context.publish?.(currentTopic, messageToSend);
+    }, intervalMs);
 
     return () => {
       clearInterval(intervalHandle);
