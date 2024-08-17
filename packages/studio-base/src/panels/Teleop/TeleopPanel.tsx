@@ -128,7 +128,7 @@ function TeleopPanel(props: TeleopPanelProps): JSX.Element {
 
     const {
       topic,
-      publishRate = 1,
+      publishRate = 5,
       stamped = false,
       upButton: { field: upField = "linear-x", value: upValue = 1 } = {},
       downButton: { field: downField = "linear-x", value: downValue = -1 } = {},
@@ -219,29 +219,44 @@ function TeleopPanel(props: TeleopPanelProps): JSX.Element {
     };
   };
 
-  useLayoutEffect(() => {
-    if (currentAction == undefined || !currentTopic) {
-      return;
-    }
-
-    const message = {
+  const createMessage = () => {
+    return {
       header: {
         stamp: getRosTimestamp(),
         frame_id: "base_link",
       },
       twist: {
-        linear: {
-          x: 0,
-          y: 0,
-          z: 0,
-        },
-        angular: {
-          x: 0,
-          y: 0,
-          z: 0,
-        },
-      }
+        linear: { x: 0, y: 0, z: 0 },
+        angular: { x: 0, y: 0, z: 0 },
+      },
     };
+  };
+
+  useLayoutEffect(() => {
+    if (currentAction == undefined || !currentTopic) {
+      return;
+    }
+
+    // const message = {
+    //   header: {
+    //     stamp: getRosTimestamp(),
+    //     frame_id: "base_link",
+    //   },
+    //   twist: {
+    //     linear: {
+    //       x: 0,
+    //       y: 0,
+    //       z: 0,
+    //     },
+    //     angular: {
+    //       x: 0,
+    //       y: 0,
+    //       z: 0,
+    //     },
+    //   }
+    // };
+
+    const message = createMessage();
 
     function setFieldValue(field: string, value: number) {
       switch (field) {
@@ -289,10 +304,13 @@ function TeleopPanel(props: TeleopPanelProps): JSX.Element {
 
     const intervalMs = (1000 * 1) / config.publishRate;
 
+    message.header.stamp = getRosTimestamp();
     const messageToSend = config.stamped ? message : message.twist;
-
     context.publish?.(currentTopic, messageToSend);
+
     const intervalHandle = setInterval(() => {
+      message.header.stamp = getRosTimestamp();
+      const messageToSend = config.stamped ? message : message.twist;
       context.publish?.(currentTopic, messageToSend);
     }, intervalMs);
 

@@ -40,3 +40,5 @@ services:
     # docker exec -it ros-test bash
     # source /opt/ros/humble/setup.bash
     # ros2 topic echo /cmd_vel geometry_msgs/msg/TwistStamped
+
+    # docker compose up --build --force-recreate -d
