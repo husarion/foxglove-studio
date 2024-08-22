@@ -5,160 +5,150 @@
 }
 
 body {
-  /* https://coolors.co/f06449-ede6e3-7d82b8-36382e-613f75  */
-  --background-color: #ede6e3;
   --joystick-color: #888;
   --joystick-head-color: #f64;
-  --text-color: #210124;
-
-  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-  background-color: var(--background-color);
 }
 
-.content {
+#container {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  height: inherit;
+  padding: 10px;
+}
+
+#toggle-editing {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  padding: 10px;
+  border-radius: 0.5em;
+  cursor: pointer;
+  width: 10%;
+  max-width: 100px;
+  min-width: 65px;
+  height: 3em;
   display: flex;
   align-items: center;
   justify-content: center;
-  height: inherit;
-  container-type: inline-size;
+  text-align: center;
+  overflow: hidden;
 }
 
-.joystick-panel {
+#joystick-container {
+  display: flex;
   flex-direction: column;
-  text-align: center;
   align-items: center;
-  padding: 20px 60px;
+  justify-content: center;
+  width: inherit;
+  height: inherit;
 }
 
 #joystick {
-  position: relative;
-  background-color: var(--joystick-color);
-  border-radius: 50%;
-  width: 270px;
-  height: 270px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 70px 70px 110px;
+  width: 100%;
+  height: 100%;
 }
 
-#joystick::before {
-  content: "";
-  width: 104%;
-  height: 104%;
-  border-radius: 50%;
-  background-image: linear-gradient(var(--rotate), #5dffdc, #3ce367 43%, #4ec200);
-  position: absolute;
-  z-index: -1;
-  animation: spin 2s linear infinite;
+.joystick-background {
+  fill: var(--joystick-color);
+  animation: animateCircle 2s infinite;
+  stroke-width: 2;
 }
 
-@keyframes spin {
+/* App.css */
+@keyframes animateCircle {
   0% {
-    --rotate: 0deg;
-    transform: scale(1);
+    stroke: #26b355;
+    stroke-width: 2;
+  }
+  25% {
+    stroke: #2dd565;
   }
   50% {
-    --rotate: 180deg;
-    transform: scale(1.02);
+    stroke: #2fde69;
+    stroke-width: 3;
+  }
+  75% {
+    stroke: #2dd565;
   }
   100% {
-    --rotate: 360deg;
-    transform: scale(1);
+    stroke: #26b355;
   }
 }
 
-#joystick-head {
-  position: absolute;
-  background-color: var(--joystick-head-color);
-  border-radius: 50%;
-  width: 115px;
-  height: 115px;
-  cursor: grab;
-
-  animation: glow 0.6s alternate infinite;
+.joystick-handle {
+  fill: var(--joystick-head-color);
+  cursor: pointer;
 }
 
-@keyframes glow {
-  0% {
-    transform: scale(1);
-  }
-  100% {
-    transform: scale(1.15);
-  }
+.joystick:hover .joystick-handle {
+  fill: #555;
 }
 
-.joystick-arrow:nth-of-type(1) {
-  position: absolute;
-  bottom: 295px;
-
-  width: 0;
-  height: 0;
-  border-left: 35px solid transparent;
-  border-right: 35px solid transparent;
-
-  border-bottom: 35px solid var(--joystick-color);
+.joystick-triangle {
+  fill: var(--joystick-color);
 }
 
-.joystick-arrow:nth-of-type(2) {
-  position: absolute;
-  top: 295px;
-
-  width: 0;
-  height: 0;
-  border-left: 35px solid transparent;
-  border-right: 35px solid transparent;
-
-  border-top: 35px solid var(--joystick-color);
-}
-
-.joystick-arrow:nth-of-type(3) {
-  position: absolute;
-  left: 295px;
-
-  width: 0;
-  height: 0;
-  border-top: 35px solid transparent;
-  border-bottom: 35px solid transparent;
-
-  border-left: 35px solid var(--joystick-color);
-}
-
-.joystick-arrow:nth-of-type(4) {
-  position: absolute;
-  right: 295px;
-
-  width: 0;
-  height: 0;
-  border-top: 35px solid transparent;
-  border-bottom: 35px solid transparent;
-
-  border-right: 35px solid var(--joystick-color);
-}
-
-#joy-note {
-  position: absolute;
+#joystick-position {
+  margin: 0.6em;
+  font-size: 1.6em;
   text-align: center;
-  font-size: 2em;
-  top: 350px;
+  justify-content: center;
 }
 
-.slider-panel {
+#controls {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  margin-left: 20px;
+  height: inherit;
+}
+
+.slider-container {
+  display: flex;
   flex-direction: column;
-  padding: 0px 10px;
+  align-items: center;
+  justify-content: center;
+  margin: 10px;
+  height: inherit;
 }
 
-.slider {
+.slider-container label {
+  font-size: 1.6em;
+  margin: 10px 0;
+}
+
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
   display: flex;
   writing-mode: vertical-rl;
   direction: rtl;
-  height: 230px;
+  height: 50%;
+  width: 15px;
+  background: var(--joystick-color);
+  outline: none;
+  border-radius: 10px;
   margin: 0 auto;
+  cursor: pointer;
 }
 
-.note {
-  display: flex;
-  justify-content: center;
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 25px;
+  height: 25px;
+  border-radius: 50%;
+  background: var(--joystick-head-color);
+}
+
+.slider-description {
   font-size: 1.6em;
-  margin: 5px 0px;
+  margin: 10px 0;
 }

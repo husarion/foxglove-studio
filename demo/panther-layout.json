@@ -126,7 +126,8 @@
       "yAxis": {
         "field": "angular-z",
         "limit": 3
-      }
+      },
+      "stamped": false
     },
     "Tab!1plmth0": {
       "activeTabIdx": 2,
@@ -164,18 +165,17 @@
   "userNodes": {},
   "layout": {
     "first": {
-      "first": "Battery!wppv5y",
-      "second": "EStop!1ejvisy",
-      "direction": "row",
-      "splitPercentage": 45.78378378378378
-    },
-    "second": {
-      "first": "Joy!3fmstz6",
-      "second": "Tab!1plmth0",
+      "first": {
+        "first": "Battery!wppv5y",
+        "second": "EStop!1ejvisy",
+        "direction": "row"
+      },
+      "second": "Joy!3fmstz6",
       "direction": "column",
-      "splitPercentage": 57.41007194244605
+      "splitPercentage": 34.453338548231486
     },
+    "second": "Tab!1plmth0",
     "direction": "column",
-    "splitPercentage": 23.626373626373624
+    "splitPercentage": 64.42516268980476
   }
 }

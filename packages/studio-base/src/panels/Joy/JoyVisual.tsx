@@ -3,8 +3,32 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
 import React, { useCallback, useState, useRef } from "react";
-
 import "./styles.css";
+
+const joyRadius = 37;
+
+const Arrow = ({ direction, width = 20, height = 7 }: { direction: string; width?: number; height?: number }) => {
+  let points;
+
+  switch (direction) {
+    case 'up':
+      points = `${50},${0} ${50 - width / 2},${height} ${50 + width / 2},${height}`;
+      break;
+    case 'down':
+      points = `${50},100 ${50 - width / 2},${100 - height} ${50 + width / 2},${100 - height}`;
+      break;
+    case 'left':
+      points = `${0},${50} ${height},${50 - width / 2} ${height},${50 + width / 2}`;
+      break;
+    case 'right':
+      points = `100,${50} ${100 - height},${50 - width / 2} ${100 - height},${50 + width / 2}`;
+      break;
+    default:
+      points = '';
+  }
+
+  return <polygon points={points} className="joystick-triangle" />;
+};
 
 // Type for the Joystick Props
 type JoyVisualProps = {
@@ -16,65 +40,34 @@ type JoyVisualProps = {
 
 // Component for the JoyVisual
 function JoyVisual(props: JoyVisualProps): JSX.Element {
+  const joystickRef = useRef<SVGCircleElement>(null);
+  const handleRef = useRef<SVGCircleElement>(null);
   const { onSpeedChange, disabled = false, xLimit, yLimit } = props;
   const [speed, setSpeed] = useState<{ x: number; y: number } | undefined>();
-  const [maxXAxis, setMaxXAxis] = useState(0.5);
-  const [maxYAxis, setMaxYAxis] = useState(0.5);
   const [startPos, setStartPos] = useState<{ x: number; y: number } | undefined>();
   const [isDragging, setIsDragging] = useState(false);
-  const joystickHeadRef = useRef<HTMLDivElement>(null);
+  const [scaleX, setScaleX] = useState(0.5);
+  const [scaleY, setScaleY] = useState(0.5);
+  const [isEditing, setIsEditing] = useState(false);
 
-  const startDrag = useCallback((x: number, y: number) => {
-    setIsDragging(true);
-    setStartPos({ x, y });
-    if (joystickHeadRef.current) {
-      joystickHeadRef.current.style.cursor = "grabbing";
-      joystickHeadRef.current.style.animation = "none";
-    }
-  }, []);
-
-  // Handler for mouse down and touch start events
   const handleStart = useCallback(
-    (event: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => {
-      const clientX =
-        event.type === "touchstart"
-          ? (event as React.TouchEvent<HTMLDivElement>).touches[0]!.clientX
-          : (event as React.MouseEvent<HTMLDivElement>).clientX;
-      const clientY =
-        event.type === "touchstart"
-          ? (event as React.TouchEvent<HTMLDivElement>).touches[0]!.clientY
-          : (event as React.MouseEvent<HTMLDivElement>).clientY;
-      startDrag(clientX, clientY);
-    },
-    [startDrag],
-  );
+    (event: React.MouseEvent<SVGCircleElement> | React.TouchEvent<SVGCircleElement>) => {
+      if (event.type === "mousedown") {
+        const mouseEvent = event as React.MouseEvent<SVGCircleElement>;
+        if (mouseEvent.button !== 0) { return };
+      }
 
-  const moveJoystick = useCallback(
-    (clientX: number, clientY: number) => {
-      if (isDragging && startPos && joystickHeadRef.current) {
-        let dx = clientX - startPos.x;
-        let dy = clientY - startPos.y;
+      const { clientX, clientY } = "touches" in event ? event.touches[0]! : event;
 
-        const distance = Math.sqrt(dx * dx + dy * dy);
-        const maxDistance = 130;
+      setIsDragging(true);
+      setStartPos({ x: clientX, y: clientY });
 
-        if (distance > maxDistance) {
-          dx *= maxDistance / distance;
-          dy *= maxDistance / distance;
-        }
-
-        const v_x = (Math.round(-dy) / maxDistance) * maxXAxis;
-        const v_y = (Math.round(-dx) / maxDistance) * maxYAxis;
-
-        setSpeed({ x: v_x, y: v_y });
-        if (!disabled) {
-          onSpeedChange?.({ x: v_x, y: v_y });
-        }
-
-        joystickHeadRef.current.style.transform = `translate(${dx}px, ${dy}px)`;
+      if (handleRef.current) {
+        handleRef.current.style.cursor = "grabbing";
+        handleRef.current.style.animation = "none";
       }
     },
-    [isDragging, startPos, onSpeedChange, disabled, maxXAxis, maxYAxis],
+    [],
   );
 
   const handleMove = useCallback(
@@ -82,97 +75,120 @@ function JoyVisual(props: JoyVisualProps): JSX.Element {
       const clientX = "touches" in event ? event.touches[0]!.clientX : event.clientX;
       const clientY = "touches" in event ? event.touches[0]!.clientY : event.clientY;
 
-      moveJoystick(clientX, clientY);
+      if (!isDragging || !startPos || !joystickRef.current || !handleRef.current) { return; }
+
+      let dx = clientX - startPos.x;
+      let dy = clientY - startPos.y;
+
+      const distance = Math.sqrt(dx * dx + dy * dy);
+      const joyRect = joystickRef.current.getBoundingClientRect();
+      const maxDistance = joyRect.width / 2;
+
+      if (distance > maxDistance) {
+        dx *= maxDistance / distance;
+        dy *= maxDistance / distance;
+      }
+
+      const x_ratio = dx / maxDistance;
+      const y_ratio = dy / maxDistance;
+
+      const v_x = -y_ratio * scaleX;
+      const v_y = -x_ratio * scaleY;
+
+      setSpeed({ x: v_x, y: v_y });
+      if (!disabled) {
+        onSpeedChange?.({ x: v_x, y: v_y });
+      }
+
+      const cx = joyRadius * x_ratio + 50
+      const cy = joyRadius * y_ratio + 50
+
+      handleRef.current.setAttribute("cx", cx.toString());
+      handleRef.current.setAttribute("cy", cy.toString());
     },
-    [moveJoystick],
+    [isDragging, startPos, onSpeedChange, disabled, scaleX, scaleY],
   );
 
-  // Mouse up and touch end event to end dragging
+
   const handleEnd = useCallback(() => {
     if (speed != undefined || isDragging) {
       setIsDragging(false);
-      setSpeed(undefined);
+      setSpeed({ x: 0, y: 0 });
       onSpeedChange?.({ x: 0, y: 0 });
-      if (joystickHeadRef.current) {
-        joystickHeadRef.current.style.cursor = "";
-        joystickHeadRef.current.style.transform = "";
-        joystickHeadRef.current.style.animation = "glow 0.6s alternate infinite";
+      if (handleRef.current) {
+        handleRef.current.setAttribute('cx', '50');
+        handleRef.current.setAttribute('cy', '50');
+        handleRef.current.style.cursor = "";
+        handleRef.current.style.animation = "glow 0.6s alternate infinite";
       }
     }
   }, [isDragging, speed, onSpeedChange]);
 
+
   React.useEffect(() => {
-    if (isDragging) {
-      window.addEventListener("mousemove", handleMove);
-      window.addEventListener("mouseup", handleEnd);
-      window.addEventListener("touchmove", handleMove);
-      window.addEventListener("touchend", handleEnd);
-    }
+    window.addEventListener('mousemove', handleMove);
+    window.addEventListener('mouseup', handleEnd);
+    window.addEventListener('touchmove', handleMove);
+    window.addEventListener('touchend', handleEnd);
 
     return () => {
-      window.removeEventListener("mousemove", handleMove);
-      window.removeEventListener("mouseup", handleEnd);
-      window.removeEventListener("touchmove", handleMove);
-      window.removeEventListener("touchend", handleEnd);
+      window.removeEventListener('mousemove', handleMove);
+      window.removeEventListener('mouseup', handleEnd);
+      window.removeEventListener('touchmove', handleMove);
+      window.removeEventListener('touchend', handleEnd);
     };
-  }, [isDragging, handleMove, handleEnd]);
+  }, [handleEnd, handleMove]);
+
 
   return (
-    <div className="content">
-      <div className="joystick-panel">
-        <div id="joystick">
-          <div className="joystick-arrow"></div>
-          <div className="joystick-arrow"></div>
-          <div className="joystick-arrow"></div>
-          <div className="joystick-arrow"></div>
-          <div
-            id="joystick-head"
-            ref={joystickHeadRef}
-            onMouseDown={handleStart}
-            onTouchStart={handleStart}
-          ></div>
-          <p id="joy-note">
-            ({speed?.x.toFixed(2) ?? "0.00"}, {speed?.y.toFixed(2) ?? "0.00"})
-          </p>
-        </div>
+    <div id="container">
+      <button id="toggle-editing" onClick={() => { setIsEditing(!isEditing); }}>
+        {isEditing ? 'Basic Mode' : 'Advanced Mode'}
+      </button>
+      <div id="joystick-container">
+        <svg id="joystick" viewBox="0 0 100 100" aria-label="Joystick" >
+          <Arrow direction="up" />
+          <Arrow direction="down" />
+          <Arrow direction="left" />
+          <Arrow direction="right" />
+          <circle ref={joystickRef} cx="50" cy="50" r={joyRadius.toString()} className="joystick-background" />
+          <circle onMouseDown={handleStart} onTouchStart={handleStart} ref={handleRef} cx="50" cy="50" r="15" className="joystick-handle" />
+        </svg>
+        {isEditing && (<div id="joystick-position">
+          <div>({speed?.x.toFixed(2) ?? "0.00"}, {speed?.y.toFixed(2) ?? "0.00"})</div>
+        </div>)}
       </div>
-      <div style={{ display: "flex" }}>
-
-        <div className="slider-panel">
-          <p className="note"> X Axis</p>
-          <input
-            className="slider"
-            type="range"
-            aria-orientation="vertical"
-            min="0"
-            max={xLimit}
-            step="0.1"
-            value={maxXAxis}
-            onChange={(e) => {
-              setMaxXAxis(Number(e.target.value));
-            }}
-          />
-          <p className="note"> X: {maxXAxis.toFixed(1)} m/s</p>
+      {isEditing && (
+        <div id="controls">
+          <div className="slider-container">
+            <label htmlFor="xMax">X Axis</label>
+            <input
+              type="range"
+              id="xMax"
+              min="0.0"
+              max={xLimit}
+              step="0.1"
+              value={scaleX}
+              onChange={(e) => { setScaleX(parseFloat(e.target.value)); }}
+            />
+            <div className="slider-description">X: {scaleX.toFixed(1)} m/s</div>
+          </div>
+          <div className="slider-container">
+            <label htmlFor="yMax">Y Axis</label>
+            <input
+              type="range"
+              id="yMax"
+              min="0.0"
+              max={yLimit}
+              step="0.1"
+              value={scaleY}
+              onChange={(e) => { setScaleY(parseFloat(e.target.value)); }}
+            />
+            <div className="slider-description">Yaw: {scaleY.toFixed(1)} rad/s</div>
+          </div>
         </div>
-
-        <div className="slider-panel">
-          <p className="note"> Y Axis</p>
-          <input
-            className="slider"
-            type="range"
-            min="0"
-            max={yLimit}
-            step="0.1"
-            value={maxYAxis}
-            onChange={(e) => {
-              setMaxYAxis(Number(e.target.value));
-            }}
-          />
-          <p className="note"> Yaw: {maxYAxis.toFixed(1)} rad/s</p>
-        </div>
-      </div>
-    </div>
-  );
+      )}
+    </div>);
 }
 
 export default JoyVisual;
