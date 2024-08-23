@@ -2,7 +2,9 @@
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
+import { Button } from "@mui/material";
 import React, { useCallback, useState, useRef } from "react";
+
 import "./styles.css";
 
 const joyRadius = 37;
@@ -142,9 +144,9 @@ function JoyVisual(props: JoyVisualProps): JSX.Element {
 
   return (
     <div id="container">
-      <button id="toggle-editing" onClick={() => { setIsEditing(!isEditing); }}>
-        {isEditing ? 'Basic Mode' : 'Advanced Mode'}
-      </button>
+      <Button id="toggle-editing" variant="contained" color="inherit" onClick={() => { setIsEditing(!isEditing); }}>
+        {isEditing ? (<>Basic<br />Mode</>) : (<>Advanced<br />Mode</>)}
+      </Button>
       <div id="joystick-container">
         <svg id="joystick" viewBox="0 0 100 100" aria-label="Joystick" >
           <Arrow direction="up" />

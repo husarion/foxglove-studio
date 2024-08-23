@@ -16,28 +16,17 @@ body {
   justify-content: center;
   position: relative;
   height: inherit;
-  padding: 10px;
+  padding: 2em;
 }
 
 #toggle-editing {
   position: absolute;
-  top: 10px;
-  left: 10px;
-  background-color: #007bff;
-  color: white;
-  border: none;
-  padding: 10px;
-  border-radius: 0.5em;
+  top: 1em;
+  left: 1em;
+  font-size: 1.5em;
+  border-radius: 1em;
   cursor: pointer;
-  width: 10%;
-  max-width: 100px;
-  min-width: 65px;
-  height: 3em;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  overflow: hidden;
+  transition: #3498db 0.3s ease;
 }
 
 #joystick-container {
@@ -86,8 +75,8 @@ body {
   cursor: pointer;
 }
 
-.joystick:hover .joystick-handle {
-  fill: #555;
+.joystick-handle:hover {
+  fill: #ff6d4d;
 }
 
 .joystick-triangle {
@@ -95,8 +84,8 @@ body {
 }
 
 #joystick-position {
-  margin: 0.6em;
-  font-size: 1.6em;
+  margin: 0.5em;
+  font-size: 2em;
   text-align: center;
   justify-content: center;
 }
@@ -106,7 +95,7 @@ body {
   flex-direction: row;
   align-items: center;
   justify-content: center;
-  margin-left: 20px;
+  margin-left: 5em;
   height: inherit;
 }
 
@@ -115,13 +104,13 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  margin: 10px;
+  margin: 2em;
   height: inherit;
 }
 
 .slider-container label {
-  font-size: 1.6em;
-  margin: 10px 0;
+  font-size: 2em;
+  margin: 0.5em 0;
 }
 
 input[type="range"] {
@@ -131,10 +120,10 @@ input[type="range"] {
   writing-mode: vertical-rl;
   direction: rtl;
   height: 50%;
-  width: 15px;
+  width: 1.5em;
   background: var(--joystick-color);
   outline: none;
-  border-radius: 10px;
+  border-radius: 0.75em;
   margin: 0 auto;
   cursor: pointer;
 }
@@ -142,13 +131,13 @@ input[type="range"] {
 input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 25px;
-  height: 25px;
+  width: 2.5em;
+  height: 2.5em;
   border-radius: 50%;
   background: var(--joystick-head-color);
 }
 
 .slider-description {
-  font-size: 1.6em;
-  margin: 10px 0;
+  font-size: 2em;
+  margin: 0.5em 0;
 }
