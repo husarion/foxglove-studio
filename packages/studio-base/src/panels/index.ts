@@ -20,13 +20,13 @@ import parametersThumbnail from "./Parameters/thumbnail.png";
 import plotThumbnail from "./Plot/thumbnail.png";
 import publishThumbnail from "./Publish/thumbnail.png";
 import rawMessagesThumbnail from "./RawMessages/thumbnail.png";
+import serviceButtonThumbnail from "./ServiceButton/thumbnail.png";
 import stateTransitionsThumbnail from "./StateTransitions/thumbnail.png";
 import tabThumbnail from "./Tab/thumbnail.png";
 import tableThumbnail from "./Table/thumbnail.png";
 import teleopThumbnail from "./Teleop/thumbnail.png";
 import threeDeeRenderThumbnail from "./ThreeDeeRender/thumbnail.png";
 import topicGraphThumbnail from "./TopicGraph/thumbnail.png";
-import triggerButtonThumbnail from "./TriggerButton/thumbnail.png";
 import variableSliderThumbnail from "./VariableSlider/thumbnail.png";
 import diagnosticStatusThumbnail from "./diagnostics/thumbnails/diagnostic-status.png";
 import diagnosticSummaryThumbnail from "./diagnostics/thumbnails/diagnostic-summary.png";
@@ -199,11 +199,11 @@ export const getBuiltin: (t: TFunction<"panels">) => PanelInfo[] = (t) => [
     hasCustomToolbar: true,
   },
   {
-    title: t("triggerButton"),
-    type: "TriggerButton",
-    description: t("triggerButtonDescription"),
-    thumbnail: triggerButtonThumbnail,
-    module: async () => await import("./TriggerButton"),
+    title: t("serviceButton"),
+    type: "ServiceButton",
+    description: t("serviceButtonDescription"),
+    thumbnail: serviceButtonThumbnail,
+    module: async () => await import("./ServiceButton"),
   },
   {
     title: t("eStop"),

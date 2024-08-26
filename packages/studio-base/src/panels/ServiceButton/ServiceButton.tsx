@@ -9,7 +9,7 @@ import { makeStyles } from "tss-react/mui";
 import Log from "@foxglove/log";
 import { PanelExtensionContext, SettingsTreeAction } from "@foxglove/studio";
 import Stack from "@foxglove/studio-base/components/Stack";
-import { Config } from "@foxglove/studio-base/panels/TriggerButton/types";
+import { Config } from "@foxglove/studio-base/panels/ServiceButton/types";
 import ThemeProvider from "@foxglove/studio-base/theme/ThemeProvider";
 
 import { defaultConfig, settingsActionReducer, useSettingsTree } from "./settings";
@@ -88,17 +88,17 @@ function parseInput(value: string): { error?: string; parsedObject?: unknown } {
 }
 
 // Wrapper component with ThemeProvider so useStyles in the panel receives the right theme.
-export function TriggerButton({ context }: Props): JSX.Element {
+export function ServiceButton({ context }: Props): JSX.Element {
   const [colorScheme, setColorScheme] = useState<Palette["mode"]>("light");
 
   return (
     <ThemeProvider isDark={colorScheme === "dark"}>
-      <TriggerButtonContent context={context} setColorScheme={setColorScheme} />
+      <ServiceButtonContent context={context} setColorScheme={setColorScheme} />
     </ThemeProvider>
   );
 }
 
-function TriggerButtonContent(
+function ServiceButtonContent(
   props: Props & { setColorScheme: Dispatch<SetStateAction<Palette["mode"]>> },
 ): JSX.Element {
   const { context, setColorScheme } = props;
@@ -163,7 +163,7 @@ function TriggerButtonContent(
     return undefined;
   }, [context, config.serviceName]);
 
-  const canTriggerButton = Boolean(
+  const canServiceButton = Boolean(
     context.callService != undefined &&
     config.requestPayload &&
     config.serviceName &&
@@ -171,7 +171,7 @@ function TriggerButtonContent(
     state?.status !== "requesting",
   );
 
-  const triggerButtonClicked = useCallback(async () => {
+  const serviceButtonClicked = useCallback(async () => {
     if (!context.callService) {
       setState({ status: "error", value: "The data source does not allow calling services" });
       return;
@@ -263,13 +263,13 @@ function TriggerButtonContent(
                   {statusMessage}
                 </Typography>
               )}
-              <Tooltip title={config.buttonTooltip}>
+              <Tooltip title={config.buttonTooltip ? config.buttonTooltip : state?.value}>
                 <span>
                   <Button
                     className={classes.button}
                     variant="contained"
-                    disabled={!canTriggerButton}
-                    onClick={triggerButtonClicked}
+                    disabled={!canServiceButton}
+                    onClick={serviceButtonClicked}
                     data-testid="call-service-button"
                     style={{
                       minWidth: "200px",

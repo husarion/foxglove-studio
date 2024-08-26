@@ -50,8 +50,8 @@ export const panels = {
   teleopDescription: "Teleoperate a robot over a live connection.",
   topicGraph: "Topic Graph",
   topicGraphDescription: "Display a graph of active nodes, topics, and services.",
-  triggerButton: "Custom: Trigger Button",
-  triggerButtonDescription: "Button to call std_srvs/Trigger.",
+  serviceButton: "Custom: Service Button",
+  serviceButtonDescription: "Button to call std_srvs/Trigger.",
   userScripts: "User Scripts",
   userScriptsDescription:
     "Write custom data transformations in TypeScript. Previously known as Node Playground.",
