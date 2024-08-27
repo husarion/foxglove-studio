@@ -232,91 +232,68 @@ function TeleopPanel(props: TeleopPanelProps): JSX.Element {
     };
   };
 
+  function setFieldValue(message: any, field: string, value: number) {
+    switch (field) {
+      case "linear-x":
+        message.twist.linear.x = value;
+        break;
+      case "linear-y":
+        message.twist.linear.y = value;
+        break;
+      case "linear-z":
+        message.twist.linear.z = value;
+        break;
+      case "angular-x":
+        message.twist.angular.x = value;
+        break;
+      case "angular-y":
+        message.twist.angular.y = value;
+        break;
+      case "angular-z":
+        message.twist.angular.z = value;
+        break;
+    }
+  }
+
   useLayoutEffect(() => {
     if (currentAction == undefined || !currentTopic) {
       return;
     }
 
-    // const message = {
-    //   header: {
-    //     stamp: getRosTimestamp(),
-    //     frame_id: "base_link",
-    //   },
-    //   twist: {
-    //     linear: {
-    //       x: 0,
-    //       y: 0,
-    //       z: 0,
-    //     },
-    //     angular: {
-    //       x: 0,
-    //       y: 0,
-    //       z: 0,
-    //     },
-    //   }
-    // };
+    const publishMessage = () => {
+      const message = createMessage();
 
-    const message = createMessage();
-
-    function setFieldValue(field: string, value: number) {
-      switch (field) {
-        case "linear-x":
-          message.twist.linear.x = value;
+      switch (currentAction) {
+        case DirectionalPadAction.UP:
+          setFieldValue(message, config.upButton.field, config.upButton.value);
           break;
-        case "linear-y":
-          message.twist.linear.y = value;
+        case DirectionalPadAction.DOWN:
+          setFieldValue(message, config.downButton.field, config.downButton.value);
           break;
-        case "linear-z":
-          message.twist.linear.z = value;
+        case DirectionalPadAction.LEFT:
+          setFieldValue(message, config.leftButton.field, config.leftButton.value);
           break;
-        case "angular-x":
-          message.twist.angular.x = value;
+        case DirectionalPadAction.RIGHT:
+          setFieldValue(message, config.rightButton.field, config.rightButton.value);
           break;
-        case "angular-y":
-          message.twist.angular.y = value;
-          break;
-        case "angular-z":
-          message.twist.angular.z = value;
-          break;
+        default:
       }
-    }
-
-    switch (currentAction) {
-      case DirectionalPadAction.UP:
-        setFieldValue(config.upButton.field, config.upButton.value);
-        break;
-      case DirectionalPadAction.DOWN:
-        setFieldValue(config.downButton.field, config.downButton.value);
-        break;
-      case DirectionalPadAction.LEFT:
-        setFieldValue(config.leftButton.field, config.leftButton.value);
-        break;
-      case DirectionalPadAction.RIGHT:
-        setFieldValue(config.rightButton.field, config.rightButton.value);
-        break;
-      default:
-    }
-
-    // don't publish if rate is 0 or negative - this is a config error on user's part
-    if (config.publishRate <= 0) {
-      return;
-    }
-
-    const intervalMs = (1000 * 1) / config.publishRate;
-
-    message.header.stamp = getRosTimestamp();
-    const messageToSend = config.stamped ? message : message.twist;
-    context.publish?.(currentTopic, messageToSend);
-
-    const intervalHandle = setInterval(() => {
-      message.header.stamp = getRosTimestamp();
       const messageToSend = config.stamped ? message : message.twist;
       context.publish?.(currentTopic, messageToSend);
-    }, intervalMs);
-
-    return () => {
-      clearInterval(intervalHandle);
+      console.log("publishing message teleop:", messageToSend);
     };
+
+    // don't publish if rate is 0 or negative - this is a config error on user's part
+    if (config.publishRate > 0) {
+      const intervalMs = (1000 * 1) / config.publishRate;
+      publishMessage();
+      const intervalHandle = setInterval(publishMessage, intervalMs);
+      return () => {
+        clearInterval(intervalHandle);
+      };
+    } else {
+      return;
+    }
   }, [context, config, currentTopic, currentAction]);
 
   useLayoutEffect(() => {
