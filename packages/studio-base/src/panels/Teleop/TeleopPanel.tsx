@@ -280,7 +280,6 @@ function TeleopPanel(props: TeleopPanelProps): JSX.Element {
       }
       const messageToSend = config.stamped ? message : message.twist;
       context.publish?.(currentTopic, messageToSend);
-      console.log("publishing message teleop:", messageToSend);
     };
 
     // don't publish if rate is 0 or negative - this is a config error on user's part

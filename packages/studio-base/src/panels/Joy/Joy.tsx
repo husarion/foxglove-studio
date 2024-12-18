@@ -250,7 +250,6 @@ function Joy(props: JoyProps): JSX.Element {
       setTwistValue(message, config.xAxis, speed.x);
       setTwistValue(message, config.yAxis, speed.y);
       context.publish?.(currentTopic, message);
-      console.log("publishing message joy:", message);
     };
 
     if (config.publishRate > 0) {

@@ -102,8 +102,8 @@ function JoyVisual(props: JoyVisualProps): JSX.Element {
         onSpeedChange?.({ x: v_x, y: v_y });
       }
 
-      const cx = joyRadius * x_ratio + 50
-      const cy = joyRadius * y_ratio + 50
+      const cx = joyRadius * x_ratio + 50;
+      const cy = joyRadius * y_ratio + 50;
 
       handleRef.current.setAttribute("cx", cx.toString());
       handleRef.current.setAttribute("cy", cy.toString());
