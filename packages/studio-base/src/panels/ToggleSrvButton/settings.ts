@@ -12,9 +12,10 @@ import { SettingsTreeAction, SettingsTreeNodes } from "@foxglove/studio";
 import { Config } from "./types";
 
 export const defaultConfig: Config = {
-  requestPayload: "{}",
-  layout: "vertical",
-  advancedView: true,
+  initialValue: false,
+  requestPayload: `{"data": true}`,
+  buttonActive: "Activate",
+  buttonDisable: "Deactivate",
 };
 
 function serviceError(serviceName?: string) {
@@ -44,33 +45,29 @@ export function useSettingsTree(config: Config): SettingsTreeNodes {
             error: serviceError(config.serviceName),
             value: config.serviceName ?? "",
           },
-          layout: {
-            label: "Layout",
-            input: "toggle",
-            options: [
-              { label: "Vertical", value: "vertical" },
-              { label: "Horizontal", value: "horizontal" },
-            ],
-            value: config.layout ?? defaultConfig.layout,
-          },
-          advancedView: {
-            label: "Editing mode",
-            input: "boolean",
-            value: config.advancedView,
-          },
         },
       },
       button: {
         label: "Button",
         fields: {
-          buttonText: {
-            label: "Title",
+          initialValue: {
+            label: "Initial State",
+            input: "boolean",
+            value: config.initialValue,
+          },
+          buttonActive: {
+            label: "Activation Message",
             input: "string",
-            value: config.buttonText,
-            placeholder: `Call service ${config.serviceName ?? ""}`,
+            value: config.buttonActive,
+            placeholder: "Activate",
+          },
+          buttonDisable: {
+            label: "Deactivation Message",
+            input: "string",
+            value: config.buttonDisable,
+            placeholder: "Deactivate",
           },
           buttonTooltip: { label: "Tooltip", input: "string", value: config.buttonTooltip },
-          buttonColor: { label: "Color", input: "rgb", value: config.buttonColor },
         },
       },
     }),

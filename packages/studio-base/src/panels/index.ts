@@ -26,7 +26,7 @@ import tableThumbnail from "./Table/thumbnail.png";
 import teleopThumbnail from "./Teleop/thumbnail.png";
 import threeDeeRenderThumbnail from "./ThreeDeeRender/thumbnail.png";
 import topicGraphThumbnail from "./TopicGraph/thumbnail.png";
-import triggerButtonThumbnail from "./TriggerButton/thumbnail.png";
+import toggleSrvButtonThumbnail from "./ToggleSrvButton/thumbnail.png";
 import variableSliderThumbnail from "./VariableSlider/thumbnail.png";
 import diagnosticStatusThumbnail from "./diagnostics/thumbnails/diagnostic-status.png";
 import diagnosticSummaryThumbnail from "./diagnostics/thumbnails/diagnostic-summary.png";
@@ -199,11 +199,11 @@ export const getBuiltin: (t: TFunction<"panels">) => PanelInfo[] = (t) => [
     hasCustomToolbar: true,
   },
   {
-    title: t("triggerButton"),
-    type: "TriggerButton",
-    description: t("triggerButtonDescription"),
-    thumbnail: triggerButtonThumbnail,
-    module: async () => await import("./TriggerButton"),
+    title: t("toggleSrvButton"),
+    type: "ToggleSrvButton",
+    description: t("toggleSrvButtonDescription"),
+    thumbnail: toggleSrvButtonThumbnail,
+    module: async () => await import("./ToggleSrvButton"),
   },
   {
     title: t("eStop"),

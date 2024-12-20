@@ -4,10 +4,9 @@
 
 export type Config = {
   serviceName?: string;
+  initialValue: boolean;
   requestPayload?: string;
-  layout?: "vertical" | "horizontal";
-  advancedView: boolean;
-  buttonText?: string;
+  buttonActive: string;
+  buttonDisable: string;
   buttonTooltip?: string;
-  buttonColor?: string;
 };

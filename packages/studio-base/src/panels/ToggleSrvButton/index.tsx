@@ -12,7 +12,7 @@ import Panel from "@foxglove/studio-base/components/Panel";
 import { PanelExtensionAdapter } from "@foxglove/studio-base/components/PanelExtensionAdapter";
 import { SaveConfig } from "@foxglove/studio-base/types/panels";
 
-import { TriggerButton } from "./TriggerButton";
+import { ToggleSrvButton } from "./ToggleSrvButton";
 import { Config } from "./types";
 
 function initPanel(crash: ReturnType<typeof useCrash>, context: PanelExtensionContext) {
@@ -20,7 +20,7 @@ function initPanel(crash: ReturnType<typeof useCrash>, context: PanelExtensionCo
   ReactDOM.render(
     <StrictMode>
       <CaptureErrorBoundary onError={crash}>
-        <TriggerButton context={context} />
+        <ToggleSrvButton context={context} />
       </CaptureErrorBoundary>
     </StrictMode>,
     context.panelElement,
@@ -36,7 +36,7 @@ type Props = {
   saveConfig: SaveConfig<Config>;
 };
 
-function TriggerButtonPanelAdapter(props: Props) {
+function ToggleSrvButtonPanelAdapter(props: Props) {
   const crash = useCrash();
   const boundInitPanel = useMemo(() => initPanel.bind(undefined, crash), [crash]);
 
@@ -50,7 +50,7 @@ function TriggerButtonPanelAdapter(props: Props) {
   );
 }
 
-TriggerButtonPanelAdapter.panelType = "TriggerButton";
-TriggerButtonPanelAdapter.defaultConfig = {};
+ToggleSrvButtonPanelAdapter.panelType = "ToggleSrvButton";
+ToggleSrvButtonPanelAdapter.defaultConfig = {};
 
-export default Panel(TriggerButtonPanelAdapter);
+export default Panel(ToggleSrvButtonPanelAdapter);
