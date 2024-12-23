@@ -65,26 +65,6 @@ const useStyles = makeStyles<{ state?: string }>()((theme, { state }) => {
   };
 });
 
-function parseInput(value: string): { error?: string; parsedObject?: unknown } {
-  let parsedObject;
-  let error = undefined;
-  try {
-    const parsedAny: unknown = JSON.parse(value);
-    if (Array.isArray(parsedAny)) {
-      error = "Request content must be an object, not an array";
-    } else if (parsedAny == undefined) {
-      error = "Request content must be an object, not null";
-    } else if (typeof parsedAny !== "object") {
-      error = `Request content must be an object, not ‘${typeof parsedAny}’`;
-    } else {
-      parsedObject = parsedAny;
-    }
-  } catch (e) {
-    error = value.length !== 0 ? e.message : "Enter valid request content as JSON";
-  }
-  return { error, parsedObject };
-}
-
 function getSingleDataItem(results: unknown[]) {
   if (results.length <= 1) {
     return results[0];
@@ -253,11 +233,6 @@ function EStopContent(
     };
   }, [context, state.parsedPath?.topicName]);
 
-  const { error: requestParseError, parsedObject } = useMemo(
-    () => parseInput(config.requestPayload ?? ""),
-    [config.requestPayload],
-  );
-
   const settingsActionHandler = useCallback(
     (action: SettingsTreeAction) => {
       setConfig((prevConfig) => settingsActionReducer(prevConfig, action));
@@ -285,12 +260,9 @@ function EStopContent(
 
   const canEStop = Boolean(
     context.callService != undefined &&
-    config.requestPayload &&
     config.goServiceName &&
     config.stopServiceName &&
     eStopAction != undefined &&
-    parsedObject != undefined &&
-    requestParseError == undefined &&
     reqState?.status !== "requesting",
   );
 
@@ -309,7 +281,7 @@ function EStopContent(
 
     try {
       setReqState({ status: "requesting", value: `Calling ${serviceName}...` });
-      const response = await context.callService(serviceName, JSON.parse(config.requestPayload!));
+      const response = await context.callService(serviceName, {});
       setReqState({
         status: "success",
         value: JSON.stringify(response, (_key, value) => (typeof value === "bigint" ? value.toString() : value), 2) ?? "",
@@ -319,7 +291,7 @@ function EStopContent(
       setReqState({ status: "error", value: (err as Error).message });
       log.error(err);
     }
-  }, [context, eStopAction, config.goServiceName, config.stopServiceName, config.requestPayload]);
+  }, [context, eStopAction, config.goServiceName, config.stopServiceName]);
 
   // Setting eStopAction based on state.latestMatchingQueriedData
   useEffect(() => {

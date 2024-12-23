@@ -3,9 +3,8 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
 export type Config = {
-  serviceName?: string;
-  initialValue: boolean;
-  requestPayload?: string;
+  serviceName: string;
+  stateFieldName: string;
   buttonActive: string;
   buttonDisable: string;
   buttonTooltip?: string;

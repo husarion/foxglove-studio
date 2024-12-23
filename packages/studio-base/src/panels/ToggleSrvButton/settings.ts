@@ -12,8 +12,8 @@ import { SettingsTreeAction, SettingsTreeNodes } from "@foxglove/studio";
 import { Config } from "./types";
 
 export const defaultConfig: Config = {
-  initialValue: false,
-  requestPayload: `{"data": true}`,
+  serviceName: "",
+  stateFieldName: "",
   buttonActive: "Activate",
   buttonDisable: "Deactivate",
 };
@@ -45,16 +45,16 @@ export function useSettingsTree(config: Config): SettingsTreeNodes {
             error: serviceError(config.serviceName),
             value: config.serviceName ?? "",
           },
+          stateFieldName: {
+            label: "Topic State Field Name",
+            input: "string",
+            value: config.stateFieldName,
+          },
         },
       },
       button: {
         label: "Button",
         fields: {
-          initialValue: {
-            label: "Initial State",
-            input: "boolean",
-            value: config.initialValue,
-          },
           buttonActive: {
             label: "Activation Message",
             input: "string",

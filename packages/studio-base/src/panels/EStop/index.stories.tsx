@@ -15,12 +15,13 @@ import { Config } from "./types";
 
 const successResponseJson = JSON.stringify({ success: true }, undefined, 2);
 const baseConfig: Config = {
-  goServiceName: "/set_bool",
-  requestPayload: `{\n  "data": true\n}`,
+  goServiceName: "/trigger",
+  stopServiceName: "/reset",
+  statusTopicName: "/status",
 };
 
-const getFixture = ({ allowEStop }: { allowEStop: boolean }): Fixture => {
-  const eStop = async (service: string, _request: unknown) => {
+const getFixture = ({ allowCallService }: { allowCallService: boolean }): Fixture => {
+  const callService = async (service: string, _request: unknown) => {
     if (service !== baseConfig.goServiceName) {
       throw new Error(`Service "${service}" does not exist`);
     }
@@ -35,8 +36,8 @@ const getFixture = ({ allowEStop }: { allowEStop: boolean }): Fixture => {
       }),
     ),
     frame: {},
-    capabilities: allowEStop ? [PlayerCapabilities.eStops] : [],
-    eStop,
+    capabilities: allowCallService ? [PlayerCapabilities.callServices] : [],
+    callService,
   };
 };
 
@@ -68,7 +69,7 @@ export const EStopEnabled: StoryObj = {
     return <EStopPanel />;
   },
 
-  parameters: { panelSetup: { fixture: getFixture({ allowEStop: true }) } },
+  parameters: { panelSetup: { fixture: getFixture({ allowCallService: true }) } },
 };
 
 export const EStopEnabledServiceName: StoryObj = {
@@ -88,7 +89,7 @@ export const EStopEnabledServiceName: StoryObj = {
     }
   },
 
-  parameters: { panelSetup: { fixture: getFixture({ allowEStop: true }) } },
+  parameters: { panelSetup: { fixture: getFixture({ allowCallService: true }) } },
 };
 
 export const EStopEnabledWithCustomButtonSettings: StoryObj = {
@@ -107,23 +108,7 @@ export const EStopEnabledWithCustomButtonSettings: StoryObj = {
     });
   },
 
-  parameters: { panelSetup: { fixture: getFixture({ allowEStop: true }) } },
-};
-
-const validJSON = `{\n  "a": 1,\n  "b": 2,\n  "c": 3\n}`;
-
-export const WithValidJSON: StoryObj = {
-  render: () => {
-    return <EStopPanel overrideConfig={{ ...baseConfig, requestPayload: validJSON }} />;
-  },
-};
-
-const invalidJSON = `{\n  "a": 1,\n  'b: 2,\n  "c": 3\n}`;
-
-export const WithInvalidJSON: StoryObj = {
-  render: () => {
-    return <EStopPanel overrideConfig={{ ...baseConfig, requestPayload: invalidJSON }} />;
-  },
+  parameters: { panelSetup: { fixture: getFixture({ allowCallService: true }) } },
 };
 
 export const CallingServiceThatDoesNotExist: StoryObj = {
@@ -150,5 +135,5 @@ export const CallingServiceThatDoesNotExist: StoryObj = {
     }
   },
 
-  parameters: { panelSetup: { fixture: getFixture({ allowEStop: true }) } },
+  parameters: { panelSetup: { fixture: getFixture({ allowCallService: true }) } },
 };

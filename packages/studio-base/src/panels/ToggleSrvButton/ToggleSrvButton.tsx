@@ -4,11 +4,13 @@
 
 import { Button, Palette, Typography } from "@mui/material";
 import * as _ from "lodash-es";
-import { Dispatch, SetStateAction, useCallback, useEffect, useMemo, useState } from "react";
+import { Dispatch, SetStateAction, useCallback, useEffect, useLayoutEffect, useMemo, useReducer, useState } from "react";
 import { makeStyles } from "tss-react/mui";
 
 import Log from "@foxglove/log";
-import { PanelExtensionContext, SettingsTreeAction } from "@foxglove/studio";
+import { parseMessagePath, MessagePath } from "@foxglove/message-path";
+import { MessageEvent, PanelExtensionContext, SettingsTreeAction } from "@foxglove/studio";
+import { simpleGetMessagePathDataItems } from "@foxglove/studio-base/components/MessagePathSyntax/simpleGetMessagePathDataItems";
 import Stack from "@foxglove/studio-base/components/Stack";
 import { Config } from "@foxglove/studio-base/panels/ToggleSrvButton/types";
 import ThemeProvider from "@foxglove/studio-base/theme/ThemeProvider";
@@ -29,7 +31,21 @@ type SrvState = {
   value: string;
 };
 
-const useStyles = makeStyles<{ state: boolean }>()((theme, { state }) => {
+type State = {
+  path: string;
+  parsedPath: MessagePath | undefined;
+  latestMessage: MessageEvent | undefined;
+  latestMatchingQueriedData: unknown;
+  error: Error | undefined;
+  pathParseError: string | undefined;
+};
+
+type Action =
+  | { type: "frame"; messages: readonly MessageEvent[] }
+  | { type: "path"; path: string }
+  | { type: "seek" };
+
+const useStyles = makeStyles<{ state?: boolean }>()((theme, { state }) => {
   const buttonColor = state ? "#090" : "#900";
   const augmentedButtonColor = theme.palette.augmentColor({
     color: { main: buttonColor },
@@ -47,24 +63,81 @@ const useStyles = makeStyles<{ state: boolean }>()((theme, { state }) => {
   };
 });
 
-function parseInput(value: string): { error?: string; parsedObject?: unknown } {
-  let parsedObject;
-  let error = undefined;
-  try {
-    const parsedAny: unknown = JSON.parse(value);
-    if (Array.isArray(parsedAny)) {
-      error = "Request content must be an object, not an array";
-    } else if (parsedAny == undefined) {
-      error = "Request content must be an object, not null";
-    } else if (typeof parsedAny !== "object") {
-      error = `Request content must be an object, not ‘${typeof parsedAny}’`;
-    } else {
-      parsedObject = parsedAny;
-    }
-  } catch (e) {
-    error = value.length !== 0 ? e.message : "Enter valid request content as JSON";
+function getSingleDataItem(results: unknown[]) {
+  if (results.length <= 1) {
+    return results[0];
   }
-  return { error, parsedObject };
+  throw new Error("Message path produced multiple results");
+}
+
+function reducer(state: State, action: Action): State {
+  try {
+    switch (action.type) {
+      case "frame": {
+        if (state.pathParseError != undefined) {
+          return { ...state, latestMessage: _.last(action.messages), error: undefined };
+        }
+        let latestMatchingQueriedData = state.latestMatchingQueriedData;
+        let latestMessage = state.latestMessage;
+        if (state.parsedPath) {
+          for (const message of action.messages) {
+            if (message.topic !== state.parsedPath.topicName) {
+              continue;
+            }
+            const data = getSingleDataItem(
+              simpleGetMessagePathDataItems(message, state.parsedPath),
+            );
+            if (data != undefined) {
+              latestMatchingQueriedData = data;
+              latestMessage = message;
+            }
+          }
+        }
+        return { ...state, latestMessage, latestMatchingQueriedData, error: undefined };
+      }
+      case "path": {
+        const newPath = parseMessagePath(action.path);
+        let pathParseError: string | undefined;
+        if (
+          newPath?.messagePath.some(
+            (part) =>
+              (part.type === "filter" && typeof part.value === "object") ||
+              (part.type === "slice" &&
+                (typeof part.start === "object" || typeof part.end === "object")),
+          ) === true
+        ) {
+          pathParseError = "Message paths using variables are not currently supported";
+        }
+        let latestMatchingQueriedData: unknown;
+        let error: Error | undefined;
+        try {
+          latestMatchingQueriedData =
+            newPath && pathParseError == undefined && state.latestMessage
+              ? getSingleDataItem(simpleGetMessagePathDataItems(state.latestMessage, newPath))
+              : undefined;
+        } catch (err) {
+          error = err;
+        }
+        return {
+          ...state,
+          path: action.path,
+          parsedPath: newPath,
+          latestMatchingQueriedData,
+          error,
+          pathParseError,
+        };
+      }
+      case "seek":
+        return {
+          ...state,
+          latestMessage: undefined,
+          latestMatchingQueriedData: undefined,
+          error: undefined,
+        };
+    }
+  } catch (error) {
+    return { ...state, latestMatchingQueriedData: undefined, error };
+  }
 }
 
 // Wrapper component with ThemeProvider so useStyles in the panel receives the right theme.
@@ -91,8 +164,33 @@ function ToggleSrvButtonContent(
     ...defaultConfig,
     ...(context.initialState as Partial<Config>),
   }));
-  const [reqButtonState, setReqButtonState] = useState<boolean>(config.initialValue);
-  const { classes } = useStyles({ state: reqButtonState });
+  const [buttonState, setButtonState] = useState<boolean | undefined>();
+
+  const { classes } = useStyles({ state: buttonState });
+
+  const [state, dispatch] = useReducer(
+    reducer,
+    { ...config, path: config.stateFieldName },
+    ({ path }): State => ({
+      path: path ?? "",
+      parsedPath: parseMessagePath(path),
+      latestMessage: undefined,
+      latestMatchingQueriedData: undefined,
+      pathParseError: undefined,
+      error: undefined,
+    }),
+  );
+
+  useLayoutEffect(() => {
+    dispatch({ type: "path", path: config.stateFieldName });
+  }, [config.stateFieldName]);
+
+  useEffect(() => {
+    context.saveState(config);
+    context.setDefaultPanelTitle(
+      config.serviceName ? `Unspecified` : undefined,
+    );
+  }, [config, context]);
 
   useEffect(() => {
     context.saveState(config);
@@ -115,13 +213,13 @@ function ToggleSrvButtonContent(
   }, [context, setColorScheme]);
 
   useEffect(() => {
-    setReqButtonState(config.initialValue);
-  }, [config.initialValue]);
-
-  const { error: requestParseError, parsedObject } = useMemo(
-    () => parseInput(config.requestPayload ?? ""),
-    [config.requestPayload],
-  );
+    if (state.parsedPath?.topicName != undefined) {
+      context.subscribe([{ topic: state.parsedPath.topicName, preload: false }]);
+    }
+    return () => {
+      context.unsubscribeAll();
+    };
+  }, [context, state.parsedPath?.topicName]);
 
   const settingsActionHandler = useCallback(
     (action: SettingsTreeAction) => {
@@ -150,10 +248,9 @@ function ToggleSrvButtonContent(
 
   const canToggleSrvButton = Boolean(
     context.callService != undefined &&
-    config.requestPayload &&
     config.serviceName &&
-    parsedObject != undefined &&
-    requestParseError == undefined &&
+    config.stateFieldName &&
+    buttonState != undefined &&
     srvState?.status !== "requesting",
   );
 
@@ -165,23 +262,26 @@ function ToggleSrvButtonContent(
 
     try {
       setSrvState({ status: "requesting", value: `Calling ${config.serviceName}...` });
-      const requestPayload = JSON.parse("{ \"data\": " + reqButtonState + " }");
-      const response = await context.callService(
-        config.serviceName!,
-        requestPayload,
-      ) as { success?: boolean };
+      const requestPayload = { data: !buttonState };
+      const response = await context.callService(config.serviceName!, requestPayload) as { success?: boolean };
       setSrvState({
         status: "success",
         value: JSON.stringify(response, (_key, value) => (typeof value === "bigint" ? value.toString() : value), 2) ?? "",
       });
-      if (response.success === true) {
-        setReqButtonState(!reqButtonState);
-      }
+      setButtonState(undefined);
     } catch (err) {
       setSrvState({ status: "error", value: (err as Error).message });
       log.error(err);
     }
-  }, [reqButtonState, context, config.serviceName]);
+  }, [context, buttonState, config.serviceName]);
+
+  // Setting buttonState based on state.latestMatchingQueriedData
+  useEffect(() => {
+    if (state.latestMatchingQueriedData != undefined) {
+      const data = state.latestMatchingQueriedData as boolean;
+      setButtonState(data);
+    }
+  }, [state.latestMatchingQueriedData]);
 
   // Indicate render is complete - the effect runs after the dom is updated
   useEffect(() => {
@@ -219,7 +319,7 @@ function ToggleSrvButtonContent(
                   borderRadius: "0.3rem",
                 }}
               >
-                {reqButtonState ? config.buttonActive : config.buttonDisable}
+                {buttonState ? config.buttonActive : config.buttonDisable}
               </Button>
             </span>
           </Stack>
