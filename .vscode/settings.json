@@ -26,7 +26,6 @@
   },
   "typescript.tsdk": "node_modules/typescript/lib",
   "typescript.preferences.importModuleSpecifier": "non-relative",
-  "jest.autoRun": { "watch": false, "onSave": "test-file" },
   "jest.jestCommandLine": "yarn test",
   "eslint.lintTask.enable": true,
   "[typescriptreact]": {
@@ -37,5 +36,8 @@
   },
   "[ignore]": {
     "editor.defaultFormatter": "foxundermoon.shell-format"
-  }
+  },
+  "[shellscript]": {
+    "editor.defaultFormatter": "foxundermoon.shell-format"
+  },
 }

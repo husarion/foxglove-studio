@@ -1,0 +1,8 @@
+# rebuild: Rebuild the project
+rebuild:
+    #!/bin/bash
+    docker compose up --build --force-recreate -d
+
+demo:
+    #!/bin/bash
+    docker exec -it ros-test bash -c "source /opt/ros/humble/setup.bash && ros2 topic echo /cmd_vel geometry_msgs/msg/TwistStamped"

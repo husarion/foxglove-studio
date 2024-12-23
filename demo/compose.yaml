@@ -7,12 +7,16 @@ x-common-config: &common-config
 
 services:
   foxglove:
-    image: husarion/foxglove:improvements-nightly
+    # image: husarion/foxglove:improvements-nightly
+    build:
+      context: ..
+      dockerfile: Dockerfile
     <<: *common-config
     ports:
       - 8080:8080
     volumes:
-      - ./foxglove-layout.json:/foxglove/default-layout.json
+      # - ./foxglove-layout.json:/foxglove/default-layout.json
+      - ./just-teleop-layout.json:/foxglove/default-layout.json
       - ../Caddyfile:/etc/caddy/Caddyfile
     environment:
       - DISABLE_CACHE=true

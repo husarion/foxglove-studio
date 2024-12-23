@@ -38,6 +38,7 @@ type Config = {
   topic: undefined | string;
   publishRate: number;
   stamped: boolean;
+  advanced: boolean;
   xAxis: Axis;
   yAxis: Axis;
 };
@@ -57,6 +58,11 @@ function buildSettingsTree(config: Config, topics: readonly Topic[]): SettingsTr
         label: "Stamped",
         input: "boolean",
         value: config.stamped,
+      },
+      advanced: {
+        label: "Advanced view",
+        input: "boolean",
+        value: config.advanced,
       },
     },
     children: {
@@ -119,6 +125,7 @@ function Joy(props: JoyProps): JSX.Element {
       topic,
       publishRate = 5,
       stamped = false,
+      advanced = false,
       xAxis: { field: xAxisField = "linear-x", limit: xLimit = 1 } = {},
       yAxis: { field: yAxisField = "angular-z", limit: yLimit = 1 } = {},
     } = partialConfig;
@@ -127,6 +134,7 @@ function Joy(props: JoyProps): JSX.Element {
       topic,
       publishRate,
       stamped,
+      advanced,
       xAxis: { field: xAxisField, limit: xLimit },
       yAxis: { field: yAxisField, limit: yLimit },
     };
@@ -273,6 +281,7 @@ function Joy(props: JoyProps): JSX.Element {
       {enabled && (
         <JoyVisual
           disabled={!enabled}
+          advanced={config.advanced}
           onSpeedChange={(value) => {
             setVelocity(value);
           }}

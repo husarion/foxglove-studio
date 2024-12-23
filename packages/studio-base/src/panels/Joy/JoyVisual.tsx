@@ -2,7 +2,6 @@
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
-import { Button } from "@mui/material";
 import React, { useCallback, useState, useRef } from "react";
 
 import "./styles.css";
@@ -35,6 +34,7 @@ const Arrow = ({ direction, width = 20, height = 7 }: { direction: string; width
 // Type for the Joystick Props
 type JoyVisualProps = {
   disabled?: boolean;
+  advanced?: boolean;
   onSpeedChange?: (pos: { x: number; y: number }) => void;
   xLimit?: number;
   yLimit?: number;
@@ -44,13 +44,13 @@ type JoyVisualProps = {
 function JoyVisual(props: JoyVisualProps): JSX.Element {
   const joystickRef = useRef<SVGCircleElement>(null);
   const handleRef = useRef<SVGCircleElement>(null);
-  const { onSpeedChange, disabled = false, xLimit, yLimit } = props;
+  const { onSpeedChange, disabled = false, advanced = false, xLimit, yLimit } = props;
   const [speed, setSpeed] = useState<{ x: number; y: number } | undefined>();
   const [startPos, setStartPos] = useState<{ x: number; y: number } | undefined>();
   const [isDragging, setIsDragging] = useState(false);
   const [scaleX, setScaleX] = useState(0.5);
   const [scaleY, setScaleY] = useState(0.5);
-  const [isEditing, setIsEditing] = useState(false);
+  // const [isEditing, setIsEditing] = useState(false);
 
   const handleStart = useCallback(
     (event: React.MouseEvent<SVGCircleElement> | React.TouchEvent<SVGCircleElement>) => {
@@ -102,8 +102,8 @@ function JoyVisual(props: JoyVisualProps): JSX.Element {
         onSpeedChange?.({ x: v_x, y: v_y });
       }
 
-      const cx = joyRadius * x_ratio + 50
-      const cy = joyRadius * y_ratio + 50
+      const cx = joyRadius * x_ratio + 50;
+      const cy = joyRadius * y_ratio + 50;
 
       handleRef.current.setAttribute("cx", cx.toString());
       handleRef.current.setAttribute("cy", cy.toString());
@@ -144,9 +144,6 @@ function JoyVisual(props: JoyVisualProps): JSX.Element {
 
   return (
     <div id="container">
-      <Button id="toggle-editing" variant="contained" color="inherit" onClick={() => { setIsEditing(!isEditing); }}>
-        {isEditing ? (<>Basic<br />Mode</>) : (<>Advanced<br />Mode</>)}
-      </Button>
       <div id="joystick-container">
         <svg id="joystick" viewBox="0 0 100 100" aria-label="Joystick" >
           <Arrow direction="up" />
@@ -156,11 +153,11 @@ function JoyVisual(props: JoyVisualProps): JSX.Element {
           <circle ref={joystickRef} cx="50" cy="50" r={joyRadius.toString()} className="joystick-background" />
           <circle onMouseDown={handleStart} onTouchStart={handleStart} ref={handleRef} cx="50" cy="50" r="15" className="joystick-handle" />
         </svg>
-        {isEditing && (<div id="joystick-position">
+        {advanced && (<div id="joystick-position">
           <div>({speed?.x.toFixed(2) ?? "0.00"}, {speed?.y.toFixed(2) ?? "0.00"})</div>
         </div>)}
       </div>
-      {isEditing && (
+      {advanced && (
         <div id="controls">
           <div className="slider-container">
             <label htmlFor="xMax">X Axis</label>

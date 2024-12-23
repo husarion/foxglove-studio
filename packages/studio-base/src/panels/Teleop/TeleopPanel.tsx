@@ -36,6 +36,7 @@ const geometryMsgOptions = [
 type Config = {
   topic: undefined | string;
   publishRate: number;
+  stamped: boolean;
   upButton: { field: string; value: number };
   downButton: { field: string; value: number };
   leftButton: { field: string; value: number };
@@ -52,6 +53,11 @@ function buildSettingsTree(config: Config, topics: readonly Topic[]): SettingsTr
         input: "autocomplete",
         value: config.topic,
         items: topics.map((t) => t.name),
+      },
+      stamped: {
+        label: "Stamped",
+        input: "boolean",
+        value: config.stamped,
       },
     },
     children: {
@@ -122,7 +128,8 @@ function TeleopPanel(props: TeleopPanelProps): JSX.Element {
 
     const {
       topic,
-      publishRate = 1,
+      publishRate = 5,
+      stamped = false,
       upButton: { field: upField = "linear-x", value: upValue = 1 } = {},
       downButton: { field: downField = "linear-x", value: downValue = -1 } = {},
       leftButton: { field: leftField = "angular-z", value: leftValue = 1 } = {},
@@ -132,6 +139,7 @@ function TeleopPanel(props: TeleopPanelProps): JSX.Element {
     return {
       topic,
       publishRate,
+      stamped,
       upButton: { field: upField, value: upValue },
       downButton: { field: downField, value: downValue },
       leftButton: { field: leftField, value: leftValue },
@@ -152,7 +160,7 @@ function TeleopPanel(props: TeleopPanelProps): JSX.Element {
   }, []);
 
   // setup context render handler and render done handling
-  const [renderDone, setRenderDone] = useState<() => void>(() => () => {});
+  const [renderDone, setRenderDone] = useState<() => void>(() => () => { });
   const [colorScheme, setColorScheme] = useState<"dark" | "light">("light");
   useLayoutEffect(() => {
     context.watch("topics");
@@ -177,95 +185,114 @@ function TeleopPanel(props: TeleopPanelProps): JSX.Element {
   }, [config, context, saveState, settingsActionHandler, topics]);
 
   // advertise topic
-  const { topic: currentTopic } = config;
+  const { topic: currentTopic, stamped } = config;
   useLayoutEffect(() => {
     if (!currentTopic) {
       return;
     }
 
-    context.advertise?.(currentTopic, "geometry_msgs/Twist", {
-      datatypes: new Map([
+    const messageType = stamped ? "geometry_msgs/TwistStamped" : "geometry_msgs/Twist";
+    const datatypesMap = stamped
+      ? new Map([
+        ["std_msgs/Header", ros1["std_msgs/Header"]],
         ["geometry_msgs/Vector3", ros1["geometry_msgs/Vector3"]],
         ["geometry_msgs/Twist", ros1["geometry_msgs/Twist"]],
-      ]),
-    });
+        ["geometry_msgs/TwistStamped", ros1["geometry_msgs/TwistStamped"]],
+      ])
+      : new Map([
+        ["geometry_msgs/Vector3", ros1["geometry_msgs/Vector3"]],
+        ["geometry_msgs/Twist", ros1["geometry_msgs/Twist"]],
+      ]);
+
+    context.advertise?.(currentTopic, messageType, { datatypes: datatypesMap });
 
     return () => {
       context.unadvertise?.(currentTopic);
     };
-  }, [context, currentTopic]);
+  }, [context, currentTopic, stamped]);
+
+  const getRosTimestamp = () => {
+    const now = Date.now();
+    return {
+      sec: Math.floor(now / 1000),
+      nanosec: (now % 1000) * 1e6,
+    };
+  };
+
+  const createMessage = () => {
+    return {
+      header: {
+        stamp: getRosTimestamp(),
+        frame_id: "base_link",
+      },
+      twist: {
+        linear: { x: 0, y: 0, z: 0 },
+        angular: { x: 0, y: 0, z: 0 },
+      },
+    };
+  };
+
+  function setFieldValue(message: any, field: string, value: number) {
+    switch (field) {
+      case "linear-x":
+        message.twist.linear.x = value;
+        break;
+      case "linear-y":
+        message.twist.linear.y = value;
+        break;
+      case "linear-z":
+        message.twist.linear.z = value;
+        break;
+      case "angular-x":
+        message.twist.angular.x = value;
+        break;
+      case "angular-y":
+        message.twist.angular.y = value;
+        break;
+      case "angular-z":
+        message.twist.angular.z = value;
+        break;
+    }
+  }
 
   useLayoutEffect(() => {
     if (currentAction == undefined || !currentTopic) {
       return;
     }
 
-    const message = {
-      linear: {
-        x: 0,
-        y: 0,
-        z: 0,
-      },
-      angular: {
-        x: 0,
-        y: 0,
-        z: 0,
-      },
-    };
+    const publishMessage = () => {
+      const message = createMessage();
 
-    function setFieldValue(field: string, value: number) {
-      switch (field) {
-        case "linear-x":
-          message.linear.x = value;
+      switch (currentAction) {
+        case DirectionalPadAction.UP:
+          setFieldValue(message, config.upButton.field, config.upButton.value);
           break;
-        case "linear-y":
-          message.linear.y = value;
+        case DirectionalPadAction.DOWN:
+          setFieldValue(message, config.downButton.field, config.downButton.value);
           break;
-        case "linear-z":
-          message.linear.z = value;
+        case DirectionalPadAction.LEFT:
+          setFieldValue(message, config.leftButton.field, config.leftButton.value);
           break;
-        case "angular-x":
-          message.angular.x = value;
+        case DirectionalPadAction.RIGHT:
+          setFieldValue(message, config.rightButton.field, config.rightButton.value);
           break;
-        case "angular-y":
-          message.angular.y = value;
-          break;
-        case "angular-z":
-          message.angular.z = value;
-          break;
+        default:
       }
-    }
-
-    switch (currentAction) {
-      case DirectionalPadAction.UP:
-        setFieldValue(config.upButton.field, config.upButton.value);
-        break;
-      case DirectionalPadAction.DOWN:
-        setFieldValue(config.downButton.field, config.downButton.value);
-        break;
-      case DirectionalPadAction.LEFT:
-        setFieldValue(config.leftButton.field, config.leftButton.value);
-        break;
-      case DirectionalPadAction.RIGHT:
-        setFieldValue(config.rightButton.field, config.rightButton.value);
-        break;
-      default:
-    }
+      const messageToSend = config.stamped ? message : message.twist;
+      context.publish?.(currentTopic, messageToSend);
+    };
 
     // don't publish if rate is 0 or negative - this is a config error on user's part
-    if (config.publishRate <= 0) {
+    if (config.publishRate > 0) {
+      const intervalMs = (1000 * 1) / config.publishRate;
+      publishMessage();
+      const intervalHandle = setInterval(publishMessage, intervalMs);
+      return () => {
+        clearInterval(intervalHandle);
+      };
+    } else {
       return;
     }
-
-    const intervalMs = (1000 * 1) / config.publishRate;
-    context.publish?.(currentTopic, message);
-    const intervalHandle = setInterval(() => {
-      context.publish?.(currentTopic, message);
-    }, intervalMs);
-
-    return () => {
-      clearInterval(intervalHandle);
-    };
   }, [context, config, currentTopic, currentAction]);
 
   useLayoutEffect(() => {
