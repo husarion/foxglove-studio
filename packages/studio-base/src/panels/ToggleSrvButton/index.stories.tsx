@@ -16,7 +16,6 @@ import { Config } from "./types";
 const successResponseJson = JSON.stringify({ success: true }, undefined, 2);
 const baseConfig: Config = {
   serviceName: "/set_bool",
-  requestPayload: `{\n  "data": true\n}`,
 };
 
 const getFixture = ({ allowToggleSrvButton }: { allowToggleSrvButton: boolean }): Fixture => {
@@ -104,9 +103,8 @@ export const ToggleSrvButtonEnabledWithCustomButtonSettings: StoryObj = {
         overrideConfig={{
           ...baseConfig,
           buttonColor: "#ffbf49",
-          buttonTooltip: "I am a button tooltip",
-          buttonActive: "Activate that funky service",
-          buttonDisable: "Disable that funky service",
+          activationText: "Activate that funky service",
+          deactivationText: "Disable that funky service",
         }}
       />
     );
@@ -122,19 +120,10 @@ export const ToggleSrvButtonEnabledWithCustomButtonSettings: StoryObj = {
   parameters: { panelSetup: { fixture: getFixture({ allowToggleSrvButton: true }) } },
 };
 
-const validJSON = `{\n  "a": 1,\n  "b": 2,\n  "c": 3\n}`;
 
 export const WithValidJSON: StoryObj = {
   render: () => {
-    return <ToggleSrvButtonPanel overrideConfig={{ ...baseConfig, requestPayload: validJSON }} />;
-  },
-};
-
-const invalidJSON = `{\n  "a": 1,\n  'b: 2,\n  "c": 3\n}`;
-
-export const WithInvalidJSON: StoryObj = {
-  render: () => {
-    return <ToggleSrvButtonPanel overrideConfig={{ ...baseConfig, requestPayload: invalidJSON }} />;
+    return <ToggleSrvButtonPanel overrideConfig={{ ...baseConfig }} />;
   },
 };
 

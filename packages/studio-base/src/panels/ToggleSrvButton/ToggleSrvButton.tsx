@@ -45,8 +45,8 @@ type Action =
   | { type: "path"; path: string }
   | { type: "seek" };
 
-const useStyles = makeStyles<{ state?: boolean }>()((theme, { state }) => {
-  const buttonColor = state ? "#090" : "#900";
+const useStyles = makeStyles<{ action?: boolean; config: Config }>()((theme, { action, config }) => {
+  const buttonColor = action === true ? config.activationColor : config.deactivationColor;
   const augmentedButtonColor = theme.palette.augmentColor({
     color: { main: buttonColor },
   });
@@ -140,7 +140,6 @@ function reducer(state: State, action: Action): State {
   }
 }
 
-// Wrapper component with ThemeProvider so useStyles in the panel receives the right theme.
 export function ToggleSrvButton({ context }: Props): JSX.Element {
   const [colorScheme, setColorScheme] = useState<Palette["mode"]>("light");
 
@@ -155,24 +154,20 @@ function ToggleSrvButtonContent(
   props: Props & { setColorScheme: Dispatch<SetStateAction<Palette["mode"]>> },
 ): JSX.Element {
   const { context, setColorScheme } = props;
-
-  // panel extensions must notify when they've completed rendering
-  // onRender will setRenderDone to a done callback which we can invoke after we've rendered
   const [renderDone, setRenderDone] = useState<() => void>(() => () => { });
   const [srvState, setSrvState] = useState<SrvState | undefined>();
-  const [config, setConfig] = useState<Config>(() => ({
+  const [config, setConfig] = useState(() => ({
     ...defaultConfig,
     ...(context.initialState as Partial<Config>),
   }));
-  const [buttonState, setButtonState] = useState<boolean | undefined>();
-
-  const { classes } = useStyles({ state: buttonState });
+  const [buttonAction, setButtonAction] = useState<boolean | undefined>(undefined);
+  const { classes } = useStyles({ action: buttonAction, config });
 
   const [state, dispatch] = useReducer(
     reducer,
-    { ...config, path: config.stateFieldName },
+    { ...config, path: config.statusTopicName },
     ({ path }): State => ({
-      path: path ?? "",
+      path,
       parsedPath: parseMessagePath(path),
       latestMessage: undefined,
       latestMatchingQueriedData: undefined,
@@ -182,14 +177,13 @@ function ToggleSrvButtonContent(
   );
 
   useLayoutEffect(() => {
-    dispatch({ type: "path", path: config.stateFieldName });
-  }, [config.stateFieldName]);
+    dispatch({ type: "path", path: config.statusTopicName });
+  }, [config.statusTopicName]);
 
   useEffect(() => {
     context.saveState(config);
     context.setDefaultPanelTitle(
-      config.serviceName ? `Unspecified` : undefined,
-    );
+      config.statusTopicName === "" ? undefined : config.statusTopicName);
   }, [config, context]);
 
   useEffect(() => {
@@ -202,10 +196,20 @@ function ToggleSrvButtonContent(
   useEffect(() => {
     context.watch("colorScheme");
 
-    context.onRender = (renderSrvState, done) => {
+    context.onRender = (renderState, done) => {
       setRenderDone(() => done);
-      setColorScheme(renderSrvState.colorScheme ?? "light");
+      setColorScheme(renderState.colorScheme ?? "light");
+
+      if (renderState.didSeek === true) {
+        dispatch({ type: "seek" });
+      }
+
+      if (renderState.currentFrame) {
+        dispatch({ type: "frame", messages: renderState.currentFrame });
+      }
     };
+    context.watch("currentFrame");
+    context.watch("didSeek");
 
     return () => {
       context.onRender = undefined;
@@ -228,7 +232,7 @@ function ToggleSrvButtonContent(
     [setConfig],
   );
 
-  const settingsTree = useSettingsTree(config);
+  const settingsTree = useSettingsTree(config, state.pathParseError);
   useEffect(() => {
     context.updatePanelSettingsEditor({
       actionHandler: settingsActionHandler,
@@ -249,8 +253,8 @@ function ToggleSrvButtonContent(
   const canToggleSrvButton = Boolean(
     context.callService != undefined &&
     config.serviceName &&
-    config.stateFieldName &&
-    buttonState != undefined &&
+    config.statusTopicName &&
+    buttonAction != undefined &&
     srvState?.status !== "requesting",
   );
 
@@ -262,24 +266,24 @@ function ToggleSrvButtonContent(
 
     try {
       setSrvState({ status: "requesting", value: `Calling ${config.serviceName}...` });
-      const requestPayload = { data: !buttonState };
-      const response = await context.callService(config.serviceName!, requestPayload) as { success?: boolean };
+      const requestPayload = { data: buttonAction ?? true };
+      setButtonAction(undefined);
+      const response = await context.callService(config.serviceName, requestPayload) as { success?: boolean };
       setSrvState({
         status: "success",
         value: JSON.stringify(response, (_key, value) => (typeof value === "bigint" ? value.toString() : value), 2) ?? "",
       });
-      setButtonState(undefined);
     } catch (err) {
       setSrvState({ status: "error", value: (err as Error).message });
       log.error(err);
     }
-  }, [context, buttonState, config.serviceName]);
+  }, [context, buttonAction, config.serviceName]);
 
-  // Setting buttonState based on state.latestMatchingQueriedData
+  // Setting buttonAction based on state.latestMatchingQueriedData
   useEffect(() => {
-    if (state.latestMatchingQueriedData != undefined) {
-      const data = state.latestMatchingQueriedData as boolean;
-      setButtonState(data);
+    const data = state.latestMatchingQueriedData;
+    if (typeof data === "boolean") {
+      setButtonAction(!data);
     }
   }, [state.latestMatchingQueriedData]);
 
@@ -319,7 +323,7 @@ function ToggleSrvButtonContent(
                   borderRadius: "0.3rem",
                 }}
               >
-                {buttonState ? config.buttonActive : config.buttonDisable}
+                {buttonAction === true ? config.activationText : buttonAction === false ? config.deactivationText : "Unknown"}
               </Button>
             </span>
           </Stack>

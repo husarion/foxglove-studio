@@ -240,7 +240,7 @@ function EStopContent(
     [setConfig],
   );
 
-  const settingsTree = useSettingsTree(config);
+  const settingsTree = useSettingsTree(config, state.pathParseError);
   useEffect(() => {
     context.updatePanelSettingsEditor({
       actionHandler: settingsActionHandler,
@@ -281,12 +281,12 @@ function EStopContent(
 
     try {
       setReqState({ status: "requesting", value: `Calling ${serviceName}...` });
+      setEStopAction(undefined);
       const response = await context.callService(serviceName, {});
       setReqState({
         status: "success",
         value: JSON.stringify(response, (_key, value) => (typeof value === "bigint" ? value.toString() : value), 2) ?? "",
       });
-      setEStopAction(undefined);
     } catch (err) {
       setReqState({ status: "error", value: (err as Error).message });
       log.error(err);

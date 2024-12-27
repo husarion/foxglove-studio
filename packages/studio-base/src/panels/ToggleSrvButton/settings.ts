@@ -13,9 +13,11 @@ import { Config } from "./types";
 
 export const defaultConfig: Config = {
   serviceName: "",
-  stateFieldName: "",
-  buttonActive: "Activate",
-  buttonDisable: "Deactivate",
+  statusTopicName: "",
+  activationText: "Activate",
+  activationColor: "#090",
+  deactivationText: "Deactivate",
+  deactivationColor: "#900",
 };
 
 function serviceError(serviceName?: string) {
@@ -34,7 +36,12 @@ export function settingsActionReducer(prevConfig: Config, action: SettingsTreeAc
   });
 }
 
-export function useSettingsTree(config: Config): SettingsTreeNodes {
+const supportedDataTypes = ["bool"];
+
+export function useSettingsTree(
+  config: Config,
+  pathParseError: string | undefined,
+): SettingsTreeNodes {
   const settings = useMemo(
     (): SettingsTreeNodes => ({
       general: {
@@ -43,31 +50,42 @@ export function useSettingsTree(config: Config): SettingsTreeNodes {
             label: "Service name",
             input: "string",
             error: serviceError(config.serviceName),
-            value: config.serviceName ?? "",
+            value: config.serviceName,
           },
-          stateFieldName: {
-            label: "Topic State Field Name",
-            input: "string",
-            value: config.stateFieldName,
+          statusTopicName: {
+            label: "Current State Data",
+            input: "messagepath",
+            value: config.statusTopicName,
+            error: pathParseError,
+            validTypes: supportedDataTypes,
           },
         },
       },
       button: {
         label: "Button",
         fields: {
-          buttonActive: {
+          activationText: {
             label: "Activation Message",
             input: "string",
-            value: config.buttonActive,
+            value: config.activationText,
             placeholder: "Activate",
           },
-          buttonDisable: {
+          activationColor: {
+            label: "Activation Color",
+            input: "rgb",
+            value: config.activationColor,
+          },
+          deactivationText: {
             label: "Deactivation Message",
             input: "string",
-            value: config.buttonDisable,
+            value: config.deactivationText,
             placeholder: "Deactivate",
           },
-          buttonTooltip: { label: "Tooltip", input: "string", value: config.buttonTooltip },
+          deactivationColor: {
+            label: "Deactivation Color",
+            input: "rgb",
+            value: config.deactivationColor,
+          },
         },
       },
     }),

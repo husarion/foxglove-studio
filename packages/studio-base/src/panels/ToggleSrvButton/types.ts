@@ -4,8 +4,9 @@
 
 export type Config = {
   serviceName: string;
-  stateFieldName: string;
-  buttonActive: string;
-  buttonDisable: string;
-  buttonTooltip?: string;
+  statusTopicName: string;
+  activationText: string;
+  activationColor: string;
+  deactivationText: string;
+  deactivationColor: string;
 };
