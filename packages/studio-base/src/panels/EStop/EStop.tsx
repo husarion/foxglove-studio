@@ -331,10 +331,10 @@ function EStopContent(
                 onClick={eStopClicked}
                 data-testid="call-service-button"
                 style={{
-                  minWidth: "150px",
-                  minHeight: "70px",
-                  fontSize: "1.7rem",
-                  borderRadius: "0.3rem",
+                  minWidth: "100px",
+                  minHeight: "100px",
+                  fontSize: "2.2rem",
+                  borderRadius: "50%",
                 }}
               >
                 {eStopAction?.toUpperCase() ?? "Wait for feedback"}

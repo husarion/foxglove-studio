@@ -4,27 +4,27 @@
       "minLevel": 0,
       "pinnedIds": [],
       "hardwareIdFilter": "",
-      "topicToRender": "{{env "ROBOT_NAMESPACE"}}/diagnostics",
+      "topicToRender": "/panther/diagnostics",
       "sortByLevel": true
     },
     "Plot!dg5ynj": {
       "paths": [
         {
           "timestampMethod": "receiveTime",
-          "value": "{{env "ROBOT_NAMESPACE"}}/imu/data.linear_acceleration.x",
+          "value": "/panther/imu/data.linear_acceleration.x",
           "enabled": true,
           "label": "x",
           "showLine": true
         },
         {
           "timestampMethod": "receiveTime",
-          "value": "{{env "ROBOT_NAMESPACE"}}/imu/data.linear_acceleration.y",
+          "value": "/panther/imu/data.linear_acceleration.y",
           "enabled": true,
           "label": "y"
         },
         {
           "timestampMethod": "receiveTime",
-          "value": "{{env "ROBOT_NAMESPACE"}}/imu/data.linear_acceleration.z",
+          "value": "/panther/imu/data.linear_acceleration.z",
           "enabled": true,
           "label": "z"
         }
@@ -41,7 +41,7 @@
       "followingViewWidth": 60
     },
     "Bar!3t52ye7": {
-      "path": "{{env "ROBOT_NAMESPACE"}}/joint_states.effort[0]",
+      "path": "/panther/joint_states.effort[0]",
       "maxValue": 34.52,
       "colorMode": "colormap",
       "gradient": ["#0000ff", "#ff00ff"],
@@ -49,7 +49,7 @@
       "foxglovePanelTitle": "FL"
     },
     "Bar!461hl59": {
-      "path": "{{env "ROBOT_NAMESPACE"}}/joint_states.effort[1]",
+      "path": "/panther/joint_states.effort[1]",
       "maxValue": 34.52,
       "colorMode": "colormap",
       "gradient": ["#0000ff", "#ff00ff"],
@@ -57,7 +57,7 @@
       "foxglovePanelTitle": "FR"
     },
     "Bar!1fzrnqw": {
-      "path": "{{env "ROBOT_NAMESPACE"}}/joint_states.effort[2]",
+      "path": "/panther/joint_states.effort[2]",
       "maxValue": 34.52,
       "colorMode": "colormap",
       "gradient": ["#0000ff", "#ff00ff"],
@@ -65,15 +65,33 @@
       "foxglovePanelTitle": "RL"
     },
     "Bar!1q5qffy": {
-      "path": "{{env "ROBOT_NAMESPACE"}}/joint_states.effort[3]",
+      "path": "/panther/joint_states.effort[3]",
       "maxValue": 34.52,
       "colorMode": "colormap",
       "gradient": ["#0000ff", "#ff00ff"],
       "reverse": true,
       "foxglovePanelTitle": "RR"
     },
+    "ToggleSrvButton!2dzr02u": {
+      "serviceName": "/panther/hardware/motor_power_enable",
+      "statusTopicName": "/panther/hardware/io_state.motor_on",
+      "activationText": "Activate Motors",
+      "activationColor": "#ae5312",
+      "deactivationText": "Deactivate Motors ",
+      "deactivationColor": "#826b0e",
+      "foxglovePanelTitle": "Motor Enable"
+    },
+    "ToggleSrvButton!449y0td": {
+      "serviceName": "/panther/hardware/aux_power_enable",
+      "statusTopicName": "/panther/hardware/io_state.aux_power",
+      "activationText": "⚡Enable AUX⚡",
+      "activationColor": "#0069a6",
+      "deactivationText": "Disable AUX",
+      "deactivationColor": "#429900",
+      "foxglovePanelTitle": "AUX power"
+    },
     "Battery!wppv5y": {
-      "path": "{{env "ROBOT_NAMESPACE"}}/battery/battery_status.percentage",
+      "path": "/panther/battery/battery_status.percentage",
       "minValue": 0,
       "maxValue": 1,
       "colorMap": "red-yellow-green",
@@ -87,13 +105,13 @@
       "layout": "vertical",
       "advancedView": false,
       "serviceName": "",
-      "goServiceName": "{{env "ROBOT_NAMESPACE"}}/hardware/e_stop_reset",
-      "stopServiceName": "{{env "ROBOT_NAMESPACE"}}/hardware/e_stop_trigger",
-      "statusTopicName": "{{env "ROBOT_NAMESPACE"}}/hardware/e_stop.data",
+      "goServiceName": "/panther/hardware/e_stop_reset",
+      "stopServiceName": "/panther/hardware/e_stop_trigger",
+      "statusTopicName": "/panther/hardware/e_stop.data",
       "foxglovePanelTitle": "E-stop"
     },
     "Joy!3fmstz6": {
-      "topic": "{{env "ROBOT_NAMESPACE"}}/cmd_vel",
+      "topic": "/panther/cmd_vel",
       "publishRate": 5,
       "upButton": {
         "field": "linear-x",
@@ -127,7 +145,8 @@
         "field": "angular-z",
         "limit": 3
       },
-      "stamped": false
+      "stamped": false,
+      "advanced": false
     },
     "Tab!1plmth0": {
       "activeTabIdx": 2,
@@ -154,6 +173,14 @@
               "direction": "row"
             },
             "direction": "column"
+          }
+        },
+        {
+          "title": "Services",
+          "layout": {
+            "first": "ToggleSrvButton!2dzr02u",
+            "second": "ToggleSrvButton!449y0td",
+            "direction": "row"
           }
         }
       ]
