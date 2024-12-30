@@ -47,8 +47,8 @@ type Action =
   | { type: "path"; path: string }
   | { type: "seek" };
 
-const useStyles = makeStyles<{ state?: string }>()((theme, { state }) => {
-  const buttonColor = state === "go" ? "#090" : "#900";
+const useStyles = makeStyles<{ state: EStopState }>()((theme, { state }) => {
+  const buttonColor = state === "go" ? "#090" : state === "stop" ? "#900" : "#666";
   const augmentedButtonColor = theme.palette.augmentColor({
     color: { main: buttonColor },
   });
@@ -331,8 +331,8 @@ function EStopContent(
                 onClick={eStopClicked}
                 data-testid="call-service-button"
                 style={{
-                  minWidth: "100px",
-                  minHeight: "100px",
+                  minWidth: "150px",
+                  minHeight: "150px",
                   fontSize: "2.2rem",
                   borderRadius: "50%",
                 }}
