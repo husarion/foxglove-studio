@@ -59,6 +59,11 @@ export function useSettingsTree(
             error: pathParseError,
             validTypes: supportedDataTypes,
           },
+          reverseLogic: {
+            label: "Reverse state logic",
+            input: "boolean",
+            value: config.reverseLogic,
+          },
         },
       },
       button: {

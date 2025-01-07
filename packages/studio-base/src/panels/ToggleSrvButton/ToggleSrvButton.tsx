@@ -265,19 +265,21 @@ function ToggleSrvButtonContent(
     }
 
     try {
-      setSrvState({ status: "requesting", value: `Calling ${config.serviceName}...` });
-      const requestPayload = { data: buttonAction ?? true };
-      setButtonAction(undefined);
-      const response = await context.callService(config.serviceName, requestPayload) as { success?: boolean };
-      setSrvState({
-        status: "success",
-        value: JSON.stringify(response, (_key, value) => (typeof value === "bigint" ? value.toString() : value), 2) ?? "",
-      });
+      if (buttonAction != undefined) {
+        setSrvState({ status: "requesting", value: `Calling ${config.serviceName}...` });
+        const requestPayload = { data: config.reverseLogic ? !buttonAction : buttonAction };
+        setButtonAction(undefined);
+        const response = await context.callService(config.serviceName, requestPayload) as { success?: boolean };
+        setSrvState({
+          status: "success",
+          value: JSON.stringify(response, (_key, value) => (typeof value === "bigint" ? value.toString() : value), 2) ?? "",
+        });
+      }
     } catch (err) {
       setSrvState({ status: "error", value: (err as Error).message });
       log.error(err);
     }
-  }, [context, buttonAction, config.serviceName]);
+  }, [context, buttonAction, config]);
 
   // Setting buttonAction based on state.latestMatchingQueriedData
   useEffect(() => {

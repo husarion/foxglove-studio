@@ -5,6 +5,7 @@
 export type Config = {
   serviceName: string;
   statusTopicName: string;
+  reverseLogic: boolean;
   activationText: string;
   activationColor: string;
   deactivationText: string;
