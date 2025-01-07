@@ -26,6 +26,8 @@ type Props = {
   context: PanelExtensionContext;
 };
 
+type ButtonState = "activated" | "deactivated" | undefined;
+
 type SrvState = {
   status: "requesting" | "error" | "success";
   value: string;
@@ -45,8 +47,8 @@ type Action =
   | { type: "path"; path: string }
   | { type: "seek" };
 
-const useStyles = makeStyles<{ action?: boolean; config: Config }>()((theme, { action, config }) => {
-  const buttonColor = action === true ? config.activationColor : config.deactivationColor;
+const useStyles = makeStyles<{ action?: ButtonState; config: Config }>()((theme, { action, config }) => {
+  const buttonColor = action === "activated" ? config.activationColor : config.deactivationColor;
   const augmentedButtonColor = theme.palette.augmentColor({
     color: { main: buttonColor },
   });
@@ -160,7 +162,7 @@ function ToggleSrvButtonContent(
     ...defaultConfig,
     ...(context.initialState as Partial<Config>),
   }));
-  const [buttonAction, setButtonAction] = useState<boolean | undefined>(undefined);
+  const [buttonAction, setButtonAction] = useState<ButtonState | undefined>(undefined);
   const { classes } = useStyles({ action: buttonAction, config });
 
   const [state, dispatch] = useReducer(
@@ -267,7 +269,7 @@ function ToggleSrvButtonContent(
     try {
       if (buttonAction != undefined) {
         setSrvState({ status: "requesting", value: `Calling ${config.serviceName}...` });
-        const requestPayload = { data: config.reverseLogic ? !buttonAction : buttonAction };
+        const requestPayload = { data: buttonAction === "activated" ? false : true };
         setButtonAction(undefined);
         const response = await context.callService(config.serviceName, requestPayload) as { success?: boolean };
         setSrvState({
@@ -285,9 +287,10 @@ function ToggleSrvButtonContent(
   useEffect(() => {
     const data = state.latestMatchingQueriedData;
     if (typeof data === "boolean") {
-      setButtonAction(!data);
+      const isDeactivated = data === config.reverseLogic;
+      setButtonAction(isDeactivated ? "deactivated" : "activated");
     }
-  }, [state.latestMatchingQueriedData]);
+  }, [state.latestMatchingQueriedData, config.reverseLogic]);
 
   // Indicate render is complete - the effect runs after the dom is updated
   useEffect(() => {
@@ -325,7 +328,7 @@ function ToggleSrvButtonContent(
                   borderRadius: "0.3rem",
                 }}
               >
-                {buttonAction === true ? config.activationText : buttonAction === false ? config.deactivationText : "Unknown"}
+                {buttonAction === "activated" ? config.deactivationText : buttonAction === "deactivated" ? config.activationText : "Unknown"}
               </Button>
             </span>
           </Stack>
