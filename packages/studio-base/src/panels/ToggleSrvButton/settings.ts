@@ -14,6 +14,7 @@ import { Config } from "./types";
 export const defaultConfig: Config = {
   serviceName: "",
   statusTopicName: "",
+  reverseLogic: false,
   activationText: "Activate",
   activationColor: "#090",
   deactivationText: "Deactivate",
