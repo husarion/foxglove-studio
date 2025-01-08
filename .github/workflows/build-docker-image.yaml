@@ -1,7 +1,6 @@
 name: Build a Docker Image
 
 on:
-  # push:
   workflow_dispatch:
 
 jobs:
@@ -48,14 +47,12 @@ jobs:
             husarion/foxglove:${{ env.FOXGLOVE_VERSION }}-${{ env.SHORT_DATE }}
             husarion/foxglove:${{ env.FOXGLOVE_VERSION }}
             husarion/foxglove:nightly
-          # cache-from: type=registry,ref=husarnet/dds-router
           cache-to: type=inline
 
       - name: Build and push (feature branch)
         if: github.ref_name != 'main'
         uses: docker/build-push-action@v3
         with:
-          # platforms: linux/amd64, linux/arm64
           platforms: linux/amd64
           push: true
           file: ./husarion_add_ons/Dockerfile
@@ -64,5 +61,4 @@ jobs:
           tags: |
             husarion/foxglove:${{ github.head_ref || github.ref_name }}-${{ env.FOXGLOVE_VERSION }}
             husarion/foxglove:nightly
-          # cache-from: type=registry,ref=husarnet/dds-router-${{ github.head_ref || github.ref_name }}
           cache-to: type=inline

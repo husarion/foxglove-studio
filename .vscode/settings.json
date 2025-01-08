@@ -26,7 +26,6 @@
   },
   "typescript.tsdk": "node_modules/typescript/lib",
   "typescript.preferences.importModuleSpecifier": "non-relative",
-  // "jest.autoRun": { "watch": false, "onSave": "test-file" },
   "jest.jestCommandLine": "yarn test",
   "eslint.lintTask.enable": true,
   "[typescriptreact]": {
@@ -40,9 +39,5 @@
   },
   "[shellscript]": {
     "editor.defaultFormatter": "foxundermoon.shell-format"
-  },
-  // Disable shell formatting for justfile
-  // "files.associations": {
-  //   "justfile": "plaintext"  // or another file association if there is a custom language for it
-  // },
+  }
 }

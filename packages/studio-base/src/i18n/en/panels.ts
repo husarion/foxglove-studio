@@ -50,7 +50,7 @@ export const panels = {
   teleopDescription: "Teleoperate a robot over a live connection.",
   topicGraph: "Topic Graph",
   topicGraphDescription: "Display a graph of active nodes, topics, and services.",
-  toggleSrvButton: "Custom: Trigger Srv Button",
+  toggleSrvButton: "Custom: Toggle Srv Button",
   toggleSrvButtonDescription: "Button to call services.",
   userScripts: "User Scripts",
   userScriptsDescription:

@@ -323,7 +323,7 @@ function EStopContent(
                     borderRadius: "50%",
                   }}
                 >
-                  {eStopAction?.toUpperCase() ?? "Wait for feedback"}
+                  {eStopAction?.toUpperCase() ?? "Waiting..."}
                 </Button>
               </span>
             </Stack>
