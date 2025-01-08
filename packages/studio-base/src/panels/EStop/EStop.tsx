@@ -7,10 +7,10 @@ import * as _ from "lodash-es";
 import { Dispatch, SetStateAction, useCallback, useEffect, useLayoutEffect, useMemo, useReducer, useState } from "react";
 import { makeStyles } from "tss-react/mui";
 
-import Log from "@foxglove/log";
 import { parseMessagePath, MessagePath } from "@foxglove/message-path";
 import { MessageEvent, PanelExtensionContext, SettingsTreeAction } from "@foxglove/studio";
 import { simpleGetMessagePathDataItems } from "@foxglove/studio-base/components/MessagePathSyntax/simpleGetMessagePathDataItems";
+import NotificationModal from "@foxglove/studio-base/components/NotificationModal";
 import Stack from "@foxglove/studio-base/components/Stack";
 import { Config } from "@foxglove/studio-base/panels/EStop/types";
 import ThemeProvider from "@foxglove/studio-base/theme/ThemeProvider";
@@ -19,18 +19,16 @@ import { defaultConfig, settingsActionReducer, useSettingsTree } from "./setting
 
 import "./styles.css";
 
-
-const log = Log.getLogger(__dirname);
-
 type Props = {
   context: PanelExtensionContext;
 };
 
 type EStopState = "go" | "stop" | undefined;
+type SrvResponse = { success: boolean; message: string };
 
-type ReqState = {
+type SrvState = {
   status: "requesting" | "error" | "success";
-  value: string;
+  response: SrvResponse | undefined;
 };
 
 type State = {
@@ -161,7 +159,7 @@ function EStopContent(
   // panel extensions must notify when they've completed rendering
   // onRender will setRenderDone to a done callback which we can invoke after we've rendered
   const [renderDone, setRenderDone] = useState<() => void>(() => () => { });
-  const [reqState, setReqState] = useState<ReqState | undefined>();
+  const [srvState, setSrvState] = useState<SrvState | undefined>();
   const [eStopAction, setEStopAction] = useState<EStopState>();
   const [config, setConfig] = useState<Config>(() => ({
     ...defaultConfig,
@@ -186,33 +184,28 @@ function EStopContent(
     dispatch({ type: "path", path: config.statusTopicName });
   }, [config.statusTopicName]);
 
-  useEffect(() => {
-    context.saveState(config);
-    context.setDefaultPanelTitle(
-      config.goServiceName ? `Unspecified` : undefined,
-    );
-  }, [config, context]);
+  const handleRequestCloseNotification = () => {
+    setSrvState(undefined);
+  };
 
   useEffect(() => {
     context.saveState(config);
-    context.setDefaultPanelTitle(
-      config.stopServiceName ? `Unspecified` : undefined,
-    );
+    context.setDefaultPanelTitle(`E-Stop`);
   }, [config, context]);
 
   useEffect(() => {
     context.watch("colorScheme");
 
-    context.onRender = (renderReqState, done) => {
+    context.onRender = (renderSrvState, done) => {
       setRenderDone(() => done);
-      setColorScheme(renderReqState.colorScheme ?? "light");
+      setColorScheme(renderSrvState.colorScheme ?? "light");
 
-      if (renderReqState.didSeek === true) {
+      if (renderSrvState.didSeek === true) {
         dispatch({ type: "seek" });
       }
 
-      if (renderReqState.currentFrame) {
-        dispatch({ type: "frame", messages: renderReqState.currentFrame });
+      if (renderSrvState.currentFrame) {
+        dispatch({ type: "frame", messages: renderSrvState.currentFrame });
       }
     };
 
@@ -263,37 +256,29 @@ function EStopContent(
     config.goServiceName &&
     config.stopServiceName &&
     eStopAction != undefined &&
-    reqState?.status !== "requesting",
+    srvState?.status !== "requesting",
   );
 
   const eStopClicked = useCallback(async () => {
     if (!context.callService) {
-      setReqState({ status: "error", value: "The data source does not allow calling services" });
+      setSrvState({ status: "error", response: undefined });
       return;
     }
 
     const serviceName = eStopAction === "go" ? config.goServiceName : config.stopServiceName;
 
     if (!serviceName) {
-      setReqState({ status: "error", value: "Service name is not configured" });
+      setSrvState({ status: "error", response: undefined });
       return;
     }
 
-    try {
-      setReqState({ status: "requesting", value: `Calling ${serviceName}...` });
-      setEStopAction(undefined);
-      const response = await context.callService(serviceName, {});
-      setReqState({
-        status: "success",
-        value: JSON.stringify(response, (_key, value) => (typeof value === "bigint" ? value.toString() : value), 2) ?? "",
-      });
-    } catch (err) {
-      setReqState({ status: "error", value: (err as Error).message });
-      log.error(err);
-    }
+    setSrvState({ status: "requesting", response: undefined });
+    const response = await context.callService(serviceName, {}) as SrvResponse;
+    setSrvState({ status: "success", response });
+
   }, [context, eStopAction, config.goServiceName, config.stopServiceName]);
 
-  // Setting eStopAction based on state.latestMatchingQueriedData
+  // Setting eStopAction based on received state
   useEffect(() => {
     if (state.latestMatchingQueriedData != undefined) {
       const data = state.latestMatchingQueriedData as boolean;
@@ -307,42 +292,55 @@ function EStopContent(
   }, [renderDone]);
 
   return (
-    <Stack flex="auto" gap={1} padding={1.5} position="relative" fullHeight>
-      <Stack justifyContent="center" alignItems="center" fullWidth fullHeight>
-        <div className="center">
-          <Stack
-            direction="column-reverse"
-            justifyContent="center"
-            alignItems="center"
-            overflow="hidden"
-            flexGrow={0}
-            gap={1.5}
-          >
-            {statusMessage && (
-              <Typography variant="caption" noWrap>
-                {statusMessage}
-              </Typography>
-            )}
-            <span>
-              <Button
-                className={classes.button}
-                variant="contained"
-                disabled={!canEStop}
-                onClick={eStopClicked}
-                data-testid="call-service-button"
-                style={{
-                  minWidth: "150px",
-                  minHeight: "150px",
-                  fontSize: "2.2rem",
-                  borderRadius: "50%",
-                }}
-              >
-                {eStopAction?.toUpperCase() ?? "Wait for feedback"}
-              </Button>
-            </span>
-          </Stack>
-        </div>
+    <>
+      <Stack flex="auto" gap={1} padding={1.5} position="relative" fullHeight>
+        <Stack justifyContent="center" alignItems="center" fullWidth fullHeight>
+          <div className="center">
+            <Stack
+              direction="column-reverse"
+              justifyContent="center"
+              alignItems="center"
+              overflow="hidden"
+              flexGrow={0}
+              gap={1.5}
+            >
+              {statusMessage && (
+                <Typography variant="caption" noWrap>
+                  {statusMessage}
+                </Typography>
+              )}
+              <span>
+                <Button
+                  className={classes.button}
+                  variant="contained"
+                  disabled={!canEStop}
+                  onClick={eStopClicked}
+                  data-testid="call-service-button"
+                  style={{
+                    minWidth: "150px",
+                    minHeight: "150px",
+                    fontSize: "2.2rem",
+                    borderRadius: "50%",
+                  }}
+                >
+                  {eStopAction?.toUpperCase() ?? "Wait for feedback"}
+                </Button>
+              </span>
+            </Stack>
+          </div>
+        </Stack>
       </Stack>
-    </Stack>
+      {srvState?.response?.success === false && (
+        <NotificationModal
+          onRequestClose={handleRequestCloseNotification}
+          notification={{
+            id: "1",
+            message: "Request Failed",
+            details: srvState.response.message,
+            severity: "error",
+          }}
+        />
+      )}
+    </>
   );
 }

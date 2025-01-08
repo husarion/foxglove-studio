@@ -7,10 +7,10 @@ import * as _ from "lodash-es";
 import { Dispatch, SetStateAction, useCallback, useEffect, useLayoutEffect, useMemo, useReducer, useState } from "react";
 import { makeStyles } from "tss-react/mui";
 
-import Log from "@foxglove/log";
 import { parseMessagePath, MessagePath } from "@foxglove/message-path";
 import { MessageEvent, PanelExtensionContext, SettingsTreeAction } from "@foxglove/studio";
 import { simpleGetMessagePathDataItems } from "@foxglove/studio-base/components/MessagePathSyntax/simpleGetMessagePathDataItems";
+import NotificationModal from "@foxglove/studio-base/components/NotificationModal";
 import Stack from "@foxglove/studio-base/components/Stack";
 import { Config } from "@foxglove/studio-base/panels/ToggleSrvButton/types";
 import ThemeProvider from "@foxglove/studio-base/theme/ThemeProvider";
@@ -19,18 +19,16 @@ import { defaultConfig, settingsActionReducer, useSettingsTree } from "./setting
 
 import "./styles.css";
 
-
-const log = Log.getLogger(__dirname);
-
 type Props = {
   context: PanelExtensionContext;
 };
 
 type ButtonState = "activated" | "deactivated" | undefined;
+type SrvResponse = { success: boolean; message: string };
 
 type SrvState = {
   status: "requesting" | "error" | "success";
-  value: string;
+  response: SrvResponse | undefined;
 };
 
 type State = {
@@ -48,7 +46,7 @@ type Action =
   | { type: "seek" };
 
 const useStyles = makeStyles<{ action?: ButtonState; config: Config }>()((theme, { action, config }) => {
-  const buttonColor = action === "activated" ? config.activationColor : config.deactivationColor;
+  const buttonColor = action === "activated" ? config.deactivationColor : config.activationColor;
   const augmentedButtonColor = theme.palette.augmentColor({
     color: { main: buttonColor },
   });
@@ -178,15 +176,13 @@ function ToggleSrvButtonContent(
     }),
   );
 
+  const handleRequestCloseNotification = () => {
+    setSrvState(undefined);
+  };
+
   useLayoutEffect(() => {
     dispatch({ type: "path", path: config.statusTopicName });
   }, [config.statusTopicName]);
-
-  useEffect(() => {
-    context.saveState(config);
-    context.setDefaultPanelTitle(
-      config.statusTopicName === "" ? undefined : config.statusTopicName);
-  }, [config, context]);
 
   useEffect(() => {
     context.saveState(config);
@@ -262,28 +258,19 @@ function ToggleSrvButtonContent(
 
   const toggleSrvButtonClicked = useCallback(async () => {
     if (!context.callService) {
-      setSrvState({ status: "error", value: "The data source does not allow calling services" });
+      setSrvState({ status: "error", response: undefined });
       return;
     }
 
-    try {
-      if (buttonAction != undefined) {
-        setSrvState({ status: "requesting", value: `Calling ${config.serviceName}...` });
-        const requestPayload = { data: buttonAction === "activated" ? false : true };
-        setButtonAction(undefined);
-        const response = await context.callService(config.serviceName, requestPayload) as { success?: boolean };
-        setSrvState({
-          status: "success",
-          value: JSON.stringify(response, (_key, value) => (typeof value === "bigint" ? value.toString() : value), 2) ?? "",
-        });
-      }
-    } catch (err) {
-      setSrvState({ status: "error", value: (err as Error).message });
-      log.error(err);
+    if (buttonAction != undefined) {
+      setSrvState({ status: "requesting", response: undefined });
+      const requestPayload = { data: buttonAction === "activated" ? false : true };
+      const response = await context.callService(config.serviceName, requestPayload) as SrvResponse;
+      setSrvState({ status: "success", response });
     }
   }, [context, buttonAction, config]);
 
-  // Setting buttonAction based on state.latestMatchingQueriedData
+  // Setting buttonAction based on received state
   useEffect(() => {
     const data = state.latestMatchingQueriedData;
     if (typeof data === "boolean") {
@@ -298,42 +285,55 @@ function ToggleSrvButtonContent(
   }, [renderDone]);
 
   return (
-    <Stack flex="auto" gap={1} padding={1.5} position="relative" fullHeight>
-      <Stack justifyContent="center" alignItems="center" fullWidth fullHeight>
-        <div className="center">
-          <Stack
-            direction="column-reverse"
-            justifyContent="center"
-            alignItems="center"
-            overflow="hidden"
-            flexGrow={0}
-            gap={1.5}
-          >
-            {statusMessage && (
-              <Typography variant="caption" noWrap>
-                {statusMessage}
-              </Typography>
-            )}
-            <span>
-              <Button
-                className={classes.button}
-                variant="contained"
-                disabled={!canToggleSrvButton}
-                onClick={toggleSrvButtonClicked}
-                data-testid="call-service-button"
-                style={{
-                  minWidth: "150px",
-                  minHeight: "70px",
-                  fontSize: "1.7rem",
-                  borderRadius: "0.3rem",
-                }}
-              >
-                {buttonAction === "activated" ? config.deactivationText : buttonAction === "deactivated" ? config.activationText : "Unknown"}
-              </Button>
-            </span>
-          </Stack>
-        </div>
+    <>
+      <Stack flex="auto" gap={1} padding={1.5} position="relative" fullHeight>
+        <Stack justifyContent="center" alignItems="center" fullWidth fullHeight>
+          <div className="center">
+            <Stack
+              direction="column-reverse"
+              justifyContent="center"
+              alignItems="center"
+              overflow="hidden"
+              flexGrow={0}
+              gap={1.5}
+            >
+              {statusMessage && (
+                <Typography variant="caption" noWrap>
+                  {statusMessage}
+                </Typography>
+              )}
+              <span>
+                <Button
+                  className={classes.button}
+                  variant="contained"
+                  disabled={!canToggleSrvButton}
+                  onClick={toggleSrvButtonClicked}
+                  data-testid="call-service-button"
+                  style={{
+                    minWidth: "150px",
+                    minHeight: "70px",
+                    fontSize: "1.7rem",
+                    borderRadius: "0.3rem",
+                  }}
+                >
+                  {buttonAction === "activated" ? config.deactivationText : buttonAction === "deactivated" ? config.activationText : "Unknown"}
+                </Button>
+              </span>
+            </Stack>
+          </div>
+        </Stack>
       </Stack>
-    </Stack>
+      {srvState?.response?.success === false && (
+        <NotificationModal
+          onRequestClose={handleRequestCloseNotification}
+          notification={{
+            id: "1",
+            message: "Request Failed",
+            details: srvState.response.message,
+            severity: "error",
+          }}
+        />
+      )}
+    </>
   );
 }

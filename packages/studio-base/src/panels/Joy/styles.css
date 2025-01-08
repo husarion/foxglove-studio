@@ -5,8 +5,10 @@
 }
 
 body {
-  --joystick-color: #888;
-  --joystick-head-color: #f64;
+  --joystick-color: #777;
+  --joystick-color-augmented: #444;
+  --joystick-head-color: #f52;
+  --joystick-head-color-augmented: #f63;
 }
 
 #container {
@@ -17,16 +19,6 @@ body {
   position: relative;
   height: inherit;
   padding: 2em;
-}
-
-#toggle-editing {
-  position: absolute;
-  top: 1em;
-  left: 1em;
-  font-size: 1.5em;
-  border-radius: 1em;
-  cursor: pointer;
-  transition: #3498db 0.3s ease;
 }
 
 #joystick-container {
@@ -45,28 +37,24 @@ body {
 
 .joystick-background {
   fill: var(--joystick-color);
-  animation: animateCircle 2s infinite;
   stroke-width: 2;
+  stroke: green;
 }
 
-/* App.css */
-@keyframes animateCircle {
+.joystick-handle-group {
+  transform-origin: 50% 50%;
+  animation: scalingAnimation 2s infinite ease-in-out;
+}
+
+@keyframes scalingAnimation {
   0% {
-    stroke: #26b355;
-    stroke-width: 2;
-  }
-  25% {
-    stroke: #2dd565;
+    transform: scale(1);
   }
   50% {
-    stroke: #2fde69;
-    stroke-width: 3;
-  }
-  75% {
-    stroke: #2dd565;
+    transform: scale(1.1);
   }
   100% {
-    stroke: #26b355;
+    transform: scale(1);
   }
 }
 
@@ -76,11 +64,11 @@ body {
 }
 
 .joystick-handle:hover {
-  fill: #ff6d4d;
+  fill: var(--joystick-head-color-augmented);
 }
 
 .joystick-triangle {
-  fill: var(--joystick-color);
+  fill: var(--joystick-color-augmented);
 }
 
 #joystick-position {
