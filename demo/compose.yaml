@@ -28,17 +28,3 @@ services:
     ports:
       - 8765:8765
     command: ros2 launch foxglove_bridge foxglove_bridge_launch.xml port:=8765 capabilities:=[clientPublish,parameters,parametersSubscribe,services,connectionGraph,assets]
-
-  ros:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: ros-test
-    <<: *common-config
-    command: tail -f /dev/null
-
-    # docker exec -it ros-test bash
-    # source /opt/ros/humble/setup.bash
-    # ros2 topic echo /cmd_vel geometry_msgs/msg/TwistStamped
-
-    # docker compose up --build --force-recreate -d
