@@ -7,7 +7,7 @@
 body {
   --joystick-color: #777;
   --joystick-color-augmented: #444;
-  --joystick-head-color: #f52;
+  --joystick-head-color: #e52;
   --joystick-head-color-augmented: #f63;
 }
 
@@ -38,7 +38,7 @@ body {
 .joystick-background {
   fill: var(--joystick-color);
   stroke-width: 2;
-  stroke: green;
+  stroke: #1b1;
 }
 
 .joystick-handle-group {
