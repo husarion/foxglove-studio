@@ -114,8 +114,9 @@ function Joy(props: JoyProps): JSX.Element {
   const { context } = props;
   const { saveState } = context;
 
-  const [speed, setVelocity] = useState<{ x: number; y: number } | undefined>();
+  const [speed, setSpeed] = useState<{ x: number; y: number } | undefined>();
   const [topics, setTopics] = useState<readonly Topic[]>([]);
+  const [halt, setHalt] = useState<boolean>(false);
 
   // Resolve an initial config which may have some missing fields into a full config
   const [config, setConfig] = useState<Config>(() => {
@@ -212,7 +213,7 @@ function Joy(props: JoyProps): JSX.Element {
     };
   };
 
-  const createMessage = () => {
+  const createMessage = useCallback(() => {
     if (config.stamped) {
       return {
         header: {
@@ -230,20 +231,28 @@ function Joy(props: JoyProps): JSX.Element {
         angular: { x: 0, y: 0, z: 0 },
       };
     }
-  };
+  }, [config.stamped]);
 
-  const setTwistValue = (message: any, axis: Axis, value: number) => {
+  const setTwistValue = useCallback((message: any, axis: Axis, value: number) => {
     const target = config.stamped ? message.twist : message;
     const [category, direction] = axis.field.split("-");
     if (category && direction) {
       target[category][direction] = value;
     }
-  };
+  }, [config.stamped]);
 
   useLayoutEffect(() => {
-    if (speed == undefined || !currentTopic) {
+    if (speed == undefined || !currentTopic || config.publishRate <= 0) {
       return;
     }
+
+    const isStoped = speed.x === 0 && speed.y === 0;
+
+    if (isStoped && halt) {
+      return;
+    }
+
+    setHalt(isStoped);
 
     const publishMessage = () => {
       const message = createMessage();
@@ -252,17 +261,13 @@ function Joy(props: JoyProps): JSX.Element {
       context.publish?.(currentTopic, message);
     };
 
-    if (config.publishRate > 0) {
-      const intervalMs = (1000 * 1) / config.publishRate;
-      publishMessage();
-      const intervalHandle = setInterval(publishMessage, intervalMs);
-      return () => {
-        clearInterval(intervalHandle);
-      };
-    } else {
-      return;
-    }
-  }, [context, config, currentTopic, speed]);
+    const intervalMs = (1000 * 1) / config.publishRate;
+    publishMessage();
+    const intervalHandle = setInterval(publishMessage, intervalMs);
+    return () => {
+      clearInterval(intervalHandle);
+    };
+  }, [context, config, currentTopic, speed, halt, createMessage, setTwistValue]);
 
   useLayoutEffect(() => {
     renderDone();
@@ -280,10 +285,9 @@ function Joy(props: JoyProps): JSX.Element {
       )}
       {enabled && (
         <JoyVisual
-          disabled={!enabled}
           advanced={config.advanced}
           onSpeedChange={(value) => {
-            setVelocity(value);
+            setSpeed(value);
           }}
           xLimit={config.xAxis.limit}
           yLimit={config.yAxis.limit}
