@@ -2,7 +2,7 @@
 // License, v2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
-import React, { useCallback, useState, useRef } from "react";
+import React, { useCallback, useState, useRef, useEffect } from "react";
 
 import "./styles.css";
 
@@ -12,20 +12,20 @@ const Arrow = ({ direction, width = 20, height = 7 }: { direction: string; width
   let points;
 
   switch (direction) {
-    case 'up':
-      points = `${50},${0} ${50 - width / 2},${height} ${50 + width / 2},${height}`;
+    case "up":
+      points = `50,0 ${50 - width / 2},${height} ${50 + width / 2},${height}`;
       break;
-    case 'down':
-      points = `${50},100 ${50 - width / 2},${100 - height} ${50 + width / 2},${100 - height}`;
+    case "down":
+      points = `50,100 ${50 - width / 2},${100 - height} ${50 + width / 2},${100 - height}`;
       break;
-    case 'left':
-      points = `${0},${50} ${height},${50 - width / 2} ${height},${50 + width / 2}`;
+    case "left":
+      points = `0,50 ${height},${50 - width / 2} ${height},${50 + width / 2}`;
       break;
-    case 'right':
-      points = `100,${50} ${100 - height},${50 - width / 2} ${100 - height},${50 + width / 2}`;
+    case "right":
+      points = `100,50 ${100 - height},${50 - width / 2} ${100 - height},${50 + width / 2}`;
       break;
     default:
-      points = '';
+      points = "";
   }
 
   return <polygon points={points} className="joystick-triangle" />;
@@ -33,7 +33,6 @@ const Arrow = ({ direction, width = 20, height = 7 }: { direction: string; width
 
 // Type for the Joystick Props
 type JoyVisualProps = {
-  disabled?: boolean;
   advanced?: boolean;
   onSpeedChange?: (pos: { x: number; y: number }) => void;
   xLimit?: number;
@@ -44,19 +43,20 @@ type JoyVisualProps = {
 function JoyVisual(props: JoyVisualProps): JSX.Element {
   const joystickRef = useRef<SVGCircleElement>(null);
   const handleRef = useRef<SVGCircleElement>(null);
-  const { onSpeedChange, disabled = false, advanced = false, xLimit, yLimit } = props;
-  const [speed, setSpeed] = useState<{ x: number; y: number } | undefined>();
+  const { onSpeedChange, advanced = false, xLimit, yLimit } = props;
+  const [pose, setJoyPose] = useState<{ x: number; y: number } | undefined>();
   const [startPos, setStartPos] = useState<{ x: number; y: number } | undefined>();
   const [isDragging, setIsDragging] = useState(false);
   const [scaleX, setScaleX] = useState(0.5);
   const [scaleY, setScaleY] = useState(0.5);
-  // const [isEditing, setIsEditing] = useState(false);
 
   const handleStart = useCallback(
     (event: React.MouseEvent<SVGCircleElement> | React.TouchEvent<SVGCircleElement>) => {
       if (event.type === "mousedown") {
         const mouseEvent = event as React.MouseEvent<SVGCircleElement>;
-        if (mouseEvent.button !== 0) { return };
+        if (mouseEvent.button !== 0) {
+          return;
+        }
       }
 
       const { clientX, clientY } = "touches" in event ? event.touches[0]! : event;
@@ -77,7 +77,9 @@ function JoyVisual(props: JoyVisualProps): JSX.Element {
       const clientX = "touches" in event ? event.touches[0]!.clientX : event.clientX;
       const clientY = "touches" in event ? event.touches[0]!.clientY : event.clientY;
 
-      if (!isDragging || !startPos || !joystickRef.current || !handleRef.current) { return; }
+      if (!isDragging || !startPos || !joystickRef.current || !handleRef.current) {
+        return;
+      }
 
       let dx = clientX - startPos.x;
       let dy = clientY - startPos.y;
@@ -97,10 +99,8 @@ function JoyVisual(props: JoyVisualProps): JSX.Element {
       const v_x = -y_ratio * scaleX;
       const v_y = -x_ratio * scaleY;
 
-      setSpeed({ x: v_x, y: v_y });
-      if (!disabled) {
-        onSpeedChange?.({ x: v_x, y: v_y });
-      }
+      setJoyPose({ x: v_x, y: v_y });
+      onSpeedChange?.({ x: v_x, y: v_y });
 
       const cx = joyRadius * x_ratio + 50;
       const cy = joyRadius * y_ratio + 50;
@@ -108,39 +108,54 @@ function JoyVisual(props: JoyVisualProps): JSX.Element {
       handleRef.current.setAttribute("cx", cx.toString());
       handleRef.current.setAttribute("cy", cy.toString());
     },
-    [isDragging, startPos, onSpeedChange, disabled, scaleX, scaleY],
+    [isDragging, startPos, onSpeedChange, scaleX, scaleY],
   );
 
-
   const handleEnd = useCallback(() => {
-    if (speed != undefined || isDragging) {
+    if (pose != undefined || isDragging) {
       setIsDragging(false);
-      setSpeed({ x: 0, y: 0 });
+      setJoyPose({ x: 0, y: 0 });
       onSpeedChange?.({ x: 0, y: 0 });
       if (handleRef.current) {
-        handleRef.current.setAttribute('cx', '50');
-        handleRef.current.setAttribute('cy', '50');
+        handleRef.current.setAttribute("cx", "50");
+        handleRef.current.setAttribute("cy", "50");
         handleRef.current.style.cursor = "";
         handleRef.current.style.animation = "glow 0.6s alternate infinite";
       }
     }
-  }, [isDragging, speed, onSpeedChange]);
+  }, [isDragging, pose, onSpeedChange]);
 
+  useEffect(() => {
+    const sendStopSignal = () => {
+      setJoyPose({ x: 0, y: 0 });
+      onSpeedChange?.({ x: 0, y: 0 });
+    };
 
-  React.useEffect(() => {
-    window.addEventListener('mousemove', handleMove);
-    window.addEventListener('mouseup', handleEnd);
-    window.addEventListener('touchmove', handleMove);
-    window.addEventListener('touchend', handleEnd);
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        setJoyPose({ x: 0, y: 0 });
+        onSpeedChange?.({ x: 0, y: 0 });
+      }
+    };
+
+    window.addEventListener("mousemove", handleMove);
+    window.addEventListener("mouseup", handleEnd);
+    window.addEventListener("touchmove", handleMove);
+    window.addEventListener("touchend", handleEnd);
+    window.addEventListener("beforeunload", sendStopSignal);
+    window.addEventListener("blur", sendStopSignal);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
-      window.removeEventListener('mousemove', handleMove);
-      window.removeEventListener('mouseup', handleEnd);
-      window.removeEventListener('touchmove', handleMove);
-      window.removeEventListener('touchend', handleEnd);
+      window.removeEventListener("mousemove", handleMove);
+      window.removeEventListener("mouseup", handleEnd);
+      window.removeEventListener("touchmove", handleMove);
+      window.removeEventListener("touchend", handleEnd);
+      window.removeEventListener("beforeunload", sendStopSignal);
+      window.removeEventListener("blur", sendStopSignal);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
-  }, [handleEnd, handleMove]);
-
+  }, [handleEnd, handleMove, onSpeedChange]);
 
   return (
     <div id="container">
@@ -150,15 +165,29 @@ function JoyVisual(props: JoyVisualProps): JSX.Element {
           <Arrow direction="down" />
           <Arrow direction="left" />
           <Arrow direction="right" />
-          <circle ref={joystickRef} cx="50" cy="50" r={joyRadius.toString()} className="joystick-background" />
+          <circle
+            ref={joystickRef}
+            cx="50"
+            cy="50"
+            r={joyRadius.toString()}
+            className="joystick-background"
+          />
           <g className="joystick-handle-group">
-            <circle onMouseDown={handleStart} onTouchStart={handleStart} ref={handleRef} cx="50" cy="50" r="15" className="joystick-handle" />
+            <circle
+              onMouseDown={handleStart}
+              onTouchStart={handleStart}
+              ref={handleRef}
+              cx="50"
+              cy="50"
+              r="15"
+              className="joystick-handle"
+            />
           </g>
         </svg>
         {advanced && (
           <div id="joystick-position">
             <div>
-              ({speed?.x.toFixed(2) ?? "0.00"}, {speed?.y.toFixed(2) ?? "0.00"})
+              ({pose?.x.toFixed(2) ?? "0.00"}, {pose?.y.toFixed(2) ?? "0.00"})
             </div>
           </div>
         )}
@@ -174,7 +203,9 @@ function JoyVisual(props: JoyVisualProps): JSX.Element {
               max={xLimit}
               step="0.1"
               value={scaleX}
-              onChange={(e) => { setScaleX(parseFloat(e.target.value)); }}
+              onChange={(e) => {
+                setScaleX(parseFloat(e.target.value));
+              }}
             />
             <div className="slider-description">X: {scaleX.toFixed(1)} m/s</div>
           </div>
@@ -187,13 +218,16 @@ function JoyVisual(props: JoyVisualProps): JSX.Element {
               max={yLimit}
               step="0.1"
               value={scaleY}
-              onChange={(e) => { setScaleY(parseFloat(e.target.value)); }}
+              onChange={(e) => {
+                setScaleY(parseFloat(e.target.value));
+              }}
             />
             <div className="slider-description">Yaw: {scaleY.toFixed(1)} rad/s</div>
           </div>
         </div>
       )}
-    </div>);
+    </div>
+  );
 }
 
 export default JoyVisual;
