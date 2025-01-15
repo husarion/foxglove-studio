@@ -145,17 +145,23 @@ function JoyVisual(props: JoyVisualProps): JSX.Element {
   return (
     <div id="container">
       <div id="joystick-container">
-        <svg id="joystick" viewBox="0 0 100 100" aria-label="Joystick" >
+        <svg id="joystick" viewBox="0 0 100 100" aria-label="Joystick">
           <Arrow direction="up" />
           <Arrow direction="down" />
           <Arrow direction="left" />
           <Arrow direction="right" />
           <circle ref={joystickRef} cx="50" cy="50" r={joyRadius.toString()} className="joystick-background" />
-          <circle onMouseDown={handleStart} onTouchStart={handleStart} ref={handleRef} cx="50" cy="50" r="15" className="joystick-handle" />
+          <g className="joystick-handle-group">
+            <circle onMouseDown={handleStart} onTouchStart={handleStart} ref={handleRef} cx="50" cy="50" r="15" className="joystick-handle" />
+          </g>
         </svg>
-        {advanced && (<div id="joystick-position">
-          <div>({speed?.x.toFixed(2) ?? "0.00"}, {speed?.y.toFixed(2) ?? "0.00"})</div>
-        </div>)}
+        {advanced && (
+          <div id="joystick-position">
+            <div>
+              ({speed?.x.toFixed(2) ?? "0.00"}, {speed?.y.toFixed(2) ?? "0.00"})
+            </div>
+          </div>
+        )}
       </div>
       {advanced && (
         <div id="controls">

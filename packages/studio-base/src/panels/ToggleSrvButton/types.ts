@@ -3,11 +3,11 @@
 // file, You can obtain one at http://mozilla.org/MPL/2.0/
 
 export type Config = {
-  serviceName?: string;
-  requestPayload?: string;
-  layout?: "vertical" | "horizontal";
-  advancedView: boolean;
-  buttonText?: string;
-  buttonTooltip?: string;
-  buttonColor?: string;
+  serviceName: string;
+  statusTopicName: string;
+  reverseLogic: boolean;
+  activationText: string;
+  activationColor: string;
+  deactivationText: string;
+  deactivationColor: string;
 };

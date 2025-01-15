@@ -20,12 +20,12 @@ import parametersThumbnail from "./Parameters/thumbnail.png";
 import plotThumbnail from "./Plot/thumbnail.png";
 import publishThumbnail from "./Publish/thumbnail.png";
 import rawMessagesThumbnail from "./RawMessages/thumbnail.png";
-import serviceButtonThumbnail from "./ServiceButton/thumbnail.png";
 import stateTransitionsThumbnail from "./StateTransitions/thumbnail.png";
 import tabThumbnail from "./Tab/thumbnail.png";
 import tableThumbnail from "./Table/thumbnail.png";
 import teleopThumbnail from "./Teleop/thumbnail.png";
 import threeDeeRenderThumbnail from "./ThreeDeeRender/thumbnail.png";
+import toggleSrvButtonThumbnail from "./ToggleSrvButton/thumbnail.png";
 import topicGraphThumbnail from "./TopicGraph/thumbnail.png";
 import variableSliderThumbnail from "./VariableSlider/thumbnail.png";
 import diagnosticStatusThumbnail from "./diagnostics/thumbnails/diagnostic-status.png";
@@ -199,11 +199,11 @@ export const getBuiltin: (t: TFunction<"panels">) => PanelInfo[] = (t) => [
     hasCustomToolbar: true,
   },
   {
-    title: t("serviceButton"),
-    type: "ServiceButton",
-    description: t("serviceButtonDescription"),
-    thumbnail: serviceButtonThumbnail,
-    module: async () => await import("./ServiceButton"),
+    title: t("toggleSrvButton"),
+    type: "ToggleSrvButton",
+    description: t("toggleSrvButtonDescription"),
+    thumbnail: toggleSrvButtonThumbnail,
+    module: async () => await import("./ToggleSrvButton"),
   },
   {
     title: t("eStop"),

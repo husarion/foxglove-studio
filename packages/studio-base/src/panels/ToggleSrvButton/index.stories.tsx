@@ -10,17 +10,16 @@ import { PlayerCapabilities } from "@foxglove/studio-base/players/types";
 import PanelSetup, { Fixture } from "@foxglove/studio-base/stories/PanelSetup";
 import delay from "@foxglove/studio-base/util/delay";
 
-import ServiceButtonPanel from "./index";
+import ToggleSrvButtonPanel from "./index";
 import { Config } from "./types";
 
 const successResponseJson = JSON.stringify({ success: true }, undefined, 2);
 const baseConfig: Config = {
   serviceName: "/set_bool",
-  requestPayload: `{\n  "data": true\n}`,
 };
 
-const getFixture = ({ allowServiceButton }: { allowServiceButton: boolean }): Fixture => {
-  const serviceButton = async (service: string, _request: unknown) => {
+const getFixture = ({ allowToggleSrvButton }: { allowToggleSrvButton: boolean }): Fixture => {
+  const toggleSrvButton = async (service: string, _request: unknown) => {
     if (service !== baseConfig.serviceName) {
       throw new Error(`Service "${service}" does not exist`);
     }
@@ -35,14 +34,14 @@ const getFixture = ({ allowServiceButton }: { allowServiceButton: boolean }): Fi
       }),
     ),
     frame: {},
-    capabilities: allowServiceButton ? [PlayerCapabilities.serviceButtons] : [],
-    serviceButton,
+    capabilities: allowToggleSrvButton ? [PlayerCapabilities.toggleSrvButtons] : [],
+    toggleSrvButton,
   };
 };
 
 export default {
-  title: "panels/ServiceButton",
-  component: ServiceButtonPanel,
+  title: "panels/ToggleSrvButton",
+  component: ToggleSrvButtonPanel,
   parameters: {
     colorScheme: "both-column",
   },
@@ -59,27 +58,27 @@ export default {
 
 export const Default: StoryObj = {
   render: () => {
-    return <ServiceButtonPanel />;
+    return <ToggleSrvButtonPanel />;
   },
 };
 
 export const DefaultHorizontalLayout: StoryObj = {
   render: () => {
-    return <ServiceButtonPanel overrideConfig={{ layout: "horizontal" }} />;
+    return <ToggleSrvButtonPanel overrideConfig={{ layout: "horizontal" }} />;
   },
 };
 
-export const ServiceButtonEnabled: StoryObj = {
+export const ToggleSrvButtonEnabled: StoryObj = {
   render: () => {
-    return <ServiceButtonPanel />;
+    return <ToggleSrvButtonPanel />;
   },
 
-  parameters: { panelSetup: { fixture: getFixture({ allowServiceButton: true }) } },
+  parameters: { panelSetup: { fixture: getFixture({ allowToggleSrvButton: true }) } },
 };
 
-export const ServiceButtonEnabledServiceName: StoryObj = {
+export const ToggleSrvButtonEnabledServiceName: StoryObj = {
   render: () => {
-    return <ServiceButtonPanel overrideConfig={{ ...baseConfig }} />;
+    return <ToggleSrvButtonPanel overrideConfig={{ ...baseConfig }} />;
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
@@ -94,53 +93,44 @@ export const ServiceButtonEnabledServiceName: StoryObj = {
     }
   },
 
-  parameters: { panelSetup: { fixture: getFixture({ allowServiceButton: true }) } },
+  parameters: { panelSetup: { fixture: getFixture({ allowToggleSrvButton: true }) } },
 };
 
-export const ServiceButtonEnabledWithCustomButtonSettings: StoryObj = {
+export const ToggleSrvButtonEnabledWithCustomButtonSettings: StoryObj = {
   render: () => {
     return (
-      <ServiceButtonPanel
+      <ToggleSrvButtonPanel
         overrideConfig={{
           ...baseConfig,
           buttonColor: "#ffbf49",
-          buttonTooltip: "I am a button tooltip",
-          buttonText: "Call that funky service",
+          activationText: "Activate that funky service",
+          deactivationText: "Disable that funky service",
         }}
       />
     );
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    const buttons = await canvas.findAllByText("Call that funky service");
+    const buttons = await canvas.findAllByText("Activate that funky service");
     buttons.forEach(async (button) => {
       await userEvent.hover(button);
     });
   },
 
-  parameters: { panelSetup: { fixture: getFixture({ allowServiceButton: true }) } },
+  parameters: { panelSetup: { fixture: getFixture({ allowToggleSrvButton: true }) } },
 };
 
-const validJSON = `{\n  "a": 1,\n  "b": 2,\n  "c": 3\n}`;
 
 export const WithValidJSON: StoryObj = {
   render: () => {
-    return <ServiceButtonPanel overrideConfig={{ ...baseConfig, requestPayload: validJSON }} />;
-  },
-};
-
-const invalidJSON = `{\n  "a": 1,\n  'b: 2,\n  "c": 3\n}`;
-
-export const WithInvalidJSON: StoryObj = {
-  render: () => {
-    return <ServiceButtonPanel overrideConfig={{ ...baseConfig, requestPayload: invalidJSON }} />;
+    return <ToggleSrvButtonPanel overrideConfig={{ ...baseConfig }} />;
   },
 };
 
 export const CallingServiceThatDoesNotExist: StoryObj = {
   render: () => {
     return (
-      <ServiceButtonPanel
+      <ToggleSrvButtonPanel
         overrideConfig={{
           ...baseConfig,
           serviceName: "/non_existing_service",
@@ -161,5 +151,5 @@ export const CallingServiceThatDoesNotExist: StoryObj = {
     }
   },
 
-  parameters: { panelSetup: { fixture: getFixture({ allowServiceButton: true }) } },
+  parameters: { panelSetup: { fixture: getFixture({ allowToggleSrvButton: true }) } },
 };

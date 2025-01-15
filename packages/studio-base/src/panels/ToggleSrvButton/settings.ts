@@ -12,9 +12,13 @@ import { SettingsTreeAction, SettingsTreeNodes } from "@foxglove/studio";
 import { Config } from "./types";
 
 export const defaultConfig: Config = {
-  requestPayload: "{}",
-  layout: "vertical",
-  advancedView: true,
+  serviceName: "",
+  statusTopicName: "",
+  reverseLogic: false,
+  activationText: "Activate",
+  activationColor: "#090",
+  deactivationText: "Deactivate",
+  deactivationColor: "#900",
 };
 
 function serviceError(serviceName?: string) {
@@ -33,7 +37,12 @@ export function settingsActionReducer(prevConfig: Config, action: SettingsTreeAc
   });
 }
 
-export function useSettingsTree(config: Config): SettingsTreeNodes {
+const supportedDataTypes = ["bool"];
+
+export function useSettingsTree(
+  config: Config,
+  pathParseError: string | undefined,
+): SettingsTreeNodes {
   const settings = useMemo(
     (): SettingsTreeNodes => ({
       general: {
@@ -42,35 +51,47 @@ export function useSettingsTree(config: Config): SettingsTreeNodes {
             label: "Service name",
             input: "string",
             error: serviceError(config.serviceName),
-            value: config.serviceName ?? "",
+            value: config.serviceName,
           },
-          layout: {
-            label: "Layout",
-            input: "toggle",
-            options: [
-              { label: "Vertical", value: "vertical" },
-              { label: "Horizontal", value: "horizontal" },
-            ],
-            value: config.layout ?? defaultConfig.layout,
+          statusTopicName: {
+            label: "Current State Data",
+            input: "messagepath",
+            value: config.statusTopicName,
+            error: pathParseError,
+            validTypes: supportedDataTypes,
           },
-          advancedView: {
-            label: "Editing mode",
+          reverseLogic: {
+            label: "Reverse state logic",
             input: "boolean",
-            value: config.advancedView,
+            value: config.reverseLogic,
           },
         },
       },
       button: {
         label: "Button",
         fields: {
-          buttonText: {
-            label: "Title",
+          activationText: {
+            label: "Activation Message",
             input: "string",
-            value: config.buttonText,
-            placeholder: `Call service ${config.serviceName ?? ""}`,
+            value: config.activationText,
+            placeholder: "Activate",
           },
-          buttonTooltip: { label: "Tooltip", input: "string", value: config.buttonTooltip },
-          buttonColor: { label: "Color", input: "rgb", value: config.buttonColor },
+          activationColor: {
+            label: "Activation Color",
+            input: "rgb",
+            value: config.activationColor,
+          },
+          deactivationText: {
+            label: "Deactivation Message",
+            input: "string",
+            value: config.deactivationText,
+            placeholder: "Deactivate",
+          },
+          deactivationColor: {
+            label: "Deactivation Color",
+            input: "rgb",
+            value: config.deactivationColor,
+          },
         },
       },
     }),

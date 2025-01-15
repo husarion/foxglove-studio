@@ -12,7 +12,7 @@ import { MessageEvent, PanelExtensionContext, SettingsTreeAction } from "@foxglo
 import { simpleGetMessagePathDataItems } from "@foxglove/studio-base/components/MessagePathSyntax/simpleGetMessagePathDataItems";
 import NotificationModal from "@foxglove/studio-base/components/NotificationModal";
 import Stack from "@foxglove/studio-base/components/Stack";
-import { Config } from "@foxglove/studio-base/panels/EStop/types";
+import { Config } from "@foxglove/studio-base/panels/ToggleSrvButton/types";
 import ThemeProvider from "@foxglove/studio-base/theme/ThemeProvider";
 
 import { defaultConfig, settingsActionReducer, useSettingsTree } from "./settings";
@@ -23,7 +23,7 @@ type Props = {
   context: PanelExtensionContext;
 };
 
-type EStopState = "go" | "stop" | undefined;
+type ButtonState = "activated" | "deactivated" | undefined;
 type SrvResponse = { success: boolean; message: string };
 
 type SrvState = {
@@ -45,8 +45,8 @@ type Action =
   | { type: "path"; path: string }
   | { type: "seek" };
 
-const useStyles = makeStyles<{ state: EStopState }>()((theme, { state }) => {
-  const buttonColor = state === "go" ? "#090" : state === "stop" ? "#900" : "#666";
+const useStyles = makeStyles<{ action?: ButtonState; config: Config }>()((theme, { action, config }) => {
+  const buttonColor = action === "activated" ? config.deactivationColor : config.activationColor;
   const augmentedButtonColor = theme.palette.augmentColor({
     color: { main: buttonColor },
   });
@@ -140,32 +140,28 @@ function reducer(state: State, action: Action): State {
   }
 }
 
-// Wrapper component with ThemeProvider so useStyles in the panel receives the right theme.
-export function EStop({ context }: Props): JSX.Element {
+export function ToggleSrvButton({ context }: Props): JSX.Element {
   const [colorScheme, setColorScheme] = useState<Palette["mode"]>("light");
 
   return (
     <ThemeProvider isDark={colorScheme === "dark"}>
-      <EStopContent context={context} setColorScheme={setColorScheme} />
+      <ToggleSrvButtonContent context={context} setColorScheme={setColorScheme} />
     </ThemeProvider>
   );
 }
 
-function EStopContent(
+function ToggleSrvButtonContent(
   props: Props & { setColorScheme: Dispatch<SetStateAction<Palette["mode"]>> },
 ): JSX.Element {
   const { context, setColorScheme } = props;
-
-  // panel extensions must notify when they've completed rendering
-  // onRender will setRenderDone to a done callback which we can invoke after we've rendered
   const [renderDone, setRenderDone] = useState<() => void>(() => () => { });
   const [srvState, setSrvState] = useState<SrvState | undefined>();
-  const [eStopAction, setEStopAction] = useState<EStopState>();
-  const [config, setConfig] = useState<Config>(() => ({
+  const [config, setConfig] = useState(() => ({
     ...defaultConfig,
     ...(context.initialState as Partial<Config>),
   }));
-  const { classes } = useStyles({ state: eStopAction });
+  const [buttonAction, setButtonAction] = useState<ButtonState | undefined>(undefined);
+  const { classes } = useStyles({ action: buttonAction, config });
 
   const [state, dispatch] = useReducer(
     reducer,
@@ -180,35 +176,36 @@ function EStopContent(
     }),
   );
 
-  useLayoutEffect(() => {
-    dispatch({ type: "path", path: config.statusTopicName });
-  }, [config.statusTopicName]);
-
   const handleRequestCloseNotification = () => {
     setSrvState(undefined);
   };
 
+  useLayoutEffect(() => {
+    dispatch({ type: "path", path: config.statusTopicName });
+  }, [config.statusTopicName]);
+
   useEffect(() => {
     context.saveState(config);
-    context.setDefaultPanelTitle(`E-Stop`);
+    context.setDefaultPanelTitle(
+      config.serviceName ? `Call service ${config.serviceName}` : undefined,
+    );
   }, [config, context]);
 
   useEffect(() => {
     context.watch("colorScheme");
 
-    context.onRender = (renderSrvState, done) => {
+    context.onRender = (renderState, done) => {
       setRenderDone(() => done);
-      setColorScheme(renderSrvState.colorScheme ?? "light");
+      setColorScheme(renderState.colorScheme ?? "light");
 
-      if (renderSrvState.didSeek === true) {
+      if (renderState.didSeek === true) {
         dispatch({ type: "seek" });
       }
 
-      if (renderSrvState.currentFrame) {
-        dispatch({ type: "frame", messages: renderSrvState.currentFrame });
+      if (renderState.currentFrame) {
+        dispatch({ type: "frame", messages: renderState.currentFrame });
       }
     };
-
     context.watch("currentFrame");
     context.watch("didSeek");
 
@@ -245,46 +242,42 @@ function EStopContent(
     if (context.callService == undefined) {
       return "Connect to a data source that supports calling services";
     }
-    if (!config.goServiceName || !config.stopServiceName) {
+    if (!config.serviceName) {
       return "Configure a service in the panel settings";
     }
     return undefined;
-  }, [context, config.goServiceName, config.stopServiceName]);
+  }, [context, config.serviceName]);
 
-  const canEStop = Boolean(
+  const canToggleSrvButton = Boolean(
     context.callService != undefined &&
-    config.goServiceName &&
-    config.stopServiceName &&
-    eStopAction != undefined &&
+    config.serviceName &&
+    config.statusTopicName &&
+    buttonAction != undefined &&
     srvState?.status !== "requesting",
   );
 
-  const eStopClicked = useCallback(async () => {
+  const toggleSrvButtonClicked = useCallback(async () => {
     if (!context.callService) {
       setSrvState({ status: "error", response: undefined });
       return;
     }
 
-    const serviceName = eStopAction === "go" ? config.goServiceName : config.stopServiceName;
-
-    if (!serviceName) {
-      setSrvState({ status: "error", response: undefined });
-      return;
+    if (buttonAction != undefined) {
+      setSrvState({ status: "requesting", response: undefined });
+      const requestPayload = { data: buttonAction === "activated" ? false : true };
+      const response = await context.callService(config.serviceName, requestPayload) as SrvResponse;
+      setSrvState({ status: "success", response });
     }
+  }, [context, buttonAction, config]);
 
-    setSrvState({ status: "requesting", response: undefined });
-    const response = await context.callService(serviceName, {}) as SrvResponse;
-    setSrvState({ status: "success", response });
-
-  }, [context, eStopAction, config.goServiceName, config.stopServiceName]);
-
-  // Setting eStopAction based on received state
+  // Setting buttonAction based on received state
   useEffect(() => {
-    if (state.latestMatchingQueriedData != undefined) {
-      const data = state.latestMatchingQueriedData as boolean;
-      setEStopAction(data ? "go" : "stop");
+    const data = state.latestMatchingQueriedData;
+    if (typeof data === "boolean") {
+      const isDeactivated = data === config.reverseLogic;
+      setButtonAction(isDeactivated ? "deactivated" : "activated");
     }
-  }, [state.latestMatchingQueriedData]);
+  }, [state.latestMatchingQueriedData, config.reverseLogic]);
 
   // Indicate render is complete - the effect runs after the dom is updated
   useEffect(() => {
@@ -313,17 +306,17 @@ function EStopContent(
                 <Button
                   className={classes.button}
                   variant="contained"
-                  disabled={!canEStop}
-                  onClick={eStopClicked}
+                  disabled={!canToggleSrvButton}
+                  onClick={toggleSrvButtonClicked}
                   data-testid="call-service-button"
                   style={{
                     minWidth: "150px",
-                    minHeight: "150px",
-                    fontSize: "2.2rem",
-                    borderRadius: "50%",
+                    minHeight: "70px",
+                    fontSize: "1.7rem",
+                    borderRadius: "0.3rem",
                   }}
                 >
-                  {eStopAction?.toUpperCase() ?? "Waiting..."}
+                  {buttonAction === "activated" ? config.deactivationText : buttonAction === "deactivated" ? config.activationText : "Unknown"}
                 </Button>
               </span>
             </Stack>

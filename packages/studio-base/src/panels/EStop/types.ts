@@ -6,5 +6,4 @@ export type Config = {
   goServiceName: string;
   stopServiceName: string;
   statusTopicName: string;
-  requestPayload?: string;
 };

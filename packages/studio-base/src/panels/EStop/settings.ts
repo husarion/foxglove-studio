@@ -12,7 +12,6 @@ import { SettingsTreeAction, SettingsTreeNodes } from "@foxglove/studio";
 import { Config } from "./types";
 
 export const defaultConfig: Config = {
-  requestPayload: "{}",
   goServiceName: "",
   stopServiceName: "",
   statusTopicName: "",
@@ -34,7 +33,12 @@ export function settingsActionReducer(prevConfig: Config, action: SettingsTreeAc
   });
 }
 
-export function useSettingsTree(config: Config): SettingsTreeNodes {
+const supportedDataTypes = ["bool"];
+
+export function useSettingsTree(
+  config: Config,
+  pathParseError: string | undefined,
+): SettingsTreeNodes {
   const settings = useMemo(
     (): SettingsTreeNodes => ({
       general: {
@@ -53,9 +57,10 @@ export function useSettingsTree(config: Config): SettingsTreeNodes {
           },
           statusTopicName: {
             label: "EStop status topic",
-            input: "string",
-            error: serviceError(config.statusTopicName),
+            input: "messagepath",
             value: config.statusTopicName,
+            error: pathParseError,
+            validTypes: supportedDataTypes,
           },
         },
       },
