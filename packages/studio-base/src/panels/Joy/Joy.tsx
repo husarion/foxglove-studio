@@ -38,6 +38,7 @@ type Config = {
   topic: undefined | string;
   publishRate: number;
   stamped: boolean;
+  frameId: string;
   advanced: boolean;
   xAxis: Axis;
   yAxis: Axis;
@@ -53,6 +54,13 @@ function buildSettingsTree(config: Config, topics: readonly Topic[]): SettingsTr
         input: "autocomplete",
         value: config.topic,
         items: topics.map((t) => t.name),
+      },
+      frameId: {
+        label: "Frame ID",
+        input: "string",
+        value: config.frameId,
+        placeholder: `(stamped only)`,
+        disabled: !config.stamped,
       },
       stamped: {
         label: "Stamped",
@@ -124,6 +132,7 @@ function Joy(props: JoyProps): JSX.Element {
 
     const {
       topic,
+      frameId = "",
       publishRate = 5,
       stamped = false,
       advanced = false,
@@ -133,6 +142,7 @@ function Joy(props: JoyProps): JSX.Element {
 
     return {
       topic,
+      frameId,
       publishRate,
       stamped,
       advanced,
@@ -218,7 +228,7 @@ function Joy(props: JoyProps): JSX.Element {
       return {
         header: {
           stamp: getRosTimestamp(),
-          frame_id: "base_link",
+          frame_id: config.frameId,
         },
         twist: {
           linear: { x: 0, y: 0, z: 0 },
@@ -231,7 +241,7 @@ function Joy(props: JoyProps): JSX.Element {
         angular: { x: 0, y: 0, z: 0 },
       };
     }
-  }, [config.stamped]);
+  }, [config.frameId, config.stamped]);
 
   const setTwistValue = useCallback((message: any, axis: Axis, value: number) => {
     const target = config.stamped ? message.twist : message;
