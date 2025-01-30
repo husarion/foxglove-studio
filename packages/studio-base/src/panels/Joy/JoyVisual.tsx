@@ -35,20 +35,22 @@ const Arrow = ({ direction, width = 20, height = 7 }: { direction: string; width
 type JoyVisualProps = {
   advanced?: boolean;
   onSpeedChange?: (pos: { x: number; y: number }) => void;
+  xInitial?: number;
+  yInitial?: number;
   xLimit?: number;
   yLimit?: number;
 };
 
 // Component for the JoyVisual
-function JoyVisual(props: JoyVisualProps): JSX.Element {
-  const joystickRef = useRef<SVGCircleElement>(null);
-  const handleRef = useRef<SVGCircleElement>(null);
-  const { onSpeedChange, advanced = false, xLimit, yLimit } = props;
+function JoyVisual(props: JoyVisualProps): React.JSX.Element {
+  const joystickRef = useRef<SVGCircleElement>(ReactNull);
+  const handleRef = useRef<SVGCircleElement>(ReactNull);
+  const { onSpeedChange, advanced = false, xInitial = 0.8, yInitial = 0.8, xLimit = 1.0, yLimit = 1.0 } = props;
   const [pose, setJoyPose] = useState<{ x: number; y: number } | undefined>();
   const [startPos, setStartPos] = useState<{ x: number; y: number } | undefined>();
   const [isDragging, setIsDragging] = useState(false);
-  const [scaleX, setScaleX] = useState(0.5);
-  const [scaleY, setScaleY] = useState(0.5);
+  const [scaleX, setScaleX] = useState(xInitial);
+  const [scaleY, setScaleY] = useState(yInitial);
 
   const handleStart = useCallback(
     (event: React.MouseEvent<SVGCircleElement> | React.TouchEvent<SVGCircleElement>) => {

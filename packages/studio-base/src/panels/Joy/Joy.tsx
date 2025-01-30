@@ -32,7 +32,7 @@ const geometryMsgOptions = [
   { label: "angular-z", value: "angular-z" },
 ];
 
-type Axis = { field: string; limit: number };
+type Axis = { field: string; initial: number; limit: number };
 
 type Config = {
   topic: undefined | string;
@@ -83,11 +83,19 @@ function buildSettingsTree(config: Config, topics: readonly Topic[]): SettingsTr
             value: config.xAxis.field,
             options: geometryMsgOptions,
           },
+          initial: {
+            label: "Initial value",
+            input: "number",
+            value: config.xAxis.initial,
+            step: 0.1,
+            min: 0,
+            max: 10,
+          },
           limit: {
             label: "Limit",
             input: "number",
             value: config.xAxis.limit,
-            step: 0.25,
+            step: 0.1,
             min: 0,
             max: 10,
           },
@@ -102,11 +110,19 @@ function buildSettingsTree(config: Config, topics: readonly Topic[]): SettingsTr
             value: config.yAxis.field,
             options: geometryMsgOptions,
           },
+          initial: {
+            label: "Initial value",
+            input: "number",
+            value: config.xAxis.initial,
+            step: 0.1,
+            min: 0,
+            max: 10,
+          },
           limit: {
             label: "Limit",
             input: "number",
             value: config.yAxis.limit,
-            step: 0.25,
+            step: 0.1,
             min: 0,
             max: 10,
           },
@@ -118,7 +134,7 @@ function buildSettingsTree(config: Config, topics: readonly Topic[]): SettingsTr
   return { general };
 }
 
-function Joy(props: JoyProps): JSX.Element {
+function Joy(props: JoyProps): React.JSX.Element {
   const { context } = props;
   const { saveState } = context;
 
@@ -136,8 +152,8 @@ function Joy(props: JoyProps): JSX.Element {
       publishRate = 5,
       stamped = false,
       advanced = false,
-      xAxis: { field: xAxisField = "linear-x", limit: xLimit = 1 } = {},
-      yAxis: { field: yAxisField = "angular-z", limit: yLimit = 1 } = {},
+      xAxis: { field: xAxisField = "linear-x", initial: xInitial = 0.8, limit: xLimit = 1 } = {},
+      yAxis: { field: yAxisField = "angular-z", initial: yInitial = 0.8, limit: yLimit = 1 } = {},
     } = partialConfig;
 
     return {
@@ -146,8 +162,8 @@ function Joy(props: JoyProps): JSX.Element {
       publishRate,
       stamped,
       advanced,
-      xAxis: { field: xAxisField, limit: xLimit },
-      yAxis: { field: yAxisField, limit: yLimit },
+      xAxis: { field: xAxisField, initial: xInitial, limit: xLimit },
+      yAxis: { field: yAxisField, initial: yInitial, limit: yLimit },
     };
   });
 
@@ -299,6 +315,8 @@ function Joy(props: JoyProps): JSX.Element {
           onSpeedChange={(value) => {
             setSpeed(value);
           }}
+          xInitial={config.xAxis.initial}
+          yInitial={config.yAxis.initial}
           xLimit={config.xAxis.limit}
           yLimit={config.yAxis.limit}
         />
