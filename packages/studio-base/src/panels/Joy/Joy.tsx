@@ -6,6 +6,7 @@ import * as _ from "lodash-es";
 import { useCallback, useEffect, useLayoutEffect, useState } from "react";
 import { DeepPartial } from "ts-essentials";
 
+
 import { ros2humble } from "@foxglove/rosmsg-msgs-common";
 import {
   PanelExtensionContext,
@@ -18,6 +19,7 @@ import EmptyState from "@foxglove/studio-base/components/EmptyState";
 import ThemeProvider from "@foxglove/studio-base/theme/ThemeProvider";
 
 import JoyVisual from "./JoyVisual";
+import { useRosCurrentTime } from "./useRosCurrentTime";
 
 type JoyProps = {
   context: PanelExtensionContext;
@@ -232,15 +234,15 @@ function Joy(props: JoyProps): React.JSX.Element {
     };
   }, [context, currentTopic, stamped]);
 
-  const getRosTimestamp = (timeOffset?: number) => {
-    const now = Date.now() + (timeOffset ?? 0);
+  const getRosTimestamp = (timeOffset: number = 0) => {
+    const now = Date.now() + timeOffset;
     return {
       sec: Math.floor(now / 1000),
       nanosec: (now % 1000) * 1e6,
     };
   };
 
-  const createMessage = useCallback((timeOffset?: number) => {
+  const createMessage = useCallback((timeOffset: number = 0) => {
     if (config.stamped) {
       return {
         header: {
@@ -260,7 +262,7 @@ function Joy(props: JoyProps): React.JSX.Element {
     }
   }, [config.frameId, config.stamped]);
 
-  const fetchSampleImplementation = async () => {
+  const fetchTimeOffset = async () => {
     const requestDate = new Date();
 
     const { headers, ok, statusText } = await fetch(window.location.href, {
@@ -280,7 +282,7 @@ function Joy(props: JoyProps): React.JSX.Element {
   };
 
   const getServerDate = useCallback(async (
-    { fetchSample }: { fetchSample: typeof fetchSampleImplementation } = { fetchSample: fetchSampleImplementation }
+    { fetchSample }: { fetchSample: typeof fetchTimeOffset } = { fetchSample: fetchTimeOffset }
   ) => {
 
     const { requestDate, responseDate, serverDate } = await fetchSample();
@@ -352,6 +354,8 @@ function Joy(props: JoyProps): React.JSX.Element {
   const hasTopic = Boolean(currentTopic);
   const enabled = canPublish && hasTopic;
 
+  const currentTime = useRosCurrentTime();
+
   return (
     <ThemeProvider isDark={colorScheme === "dark"}>
       {!canPublish && <EmptyState>Connect to a data source that supports publishing</EmptyState>}
@@ -359,16 +363,20 @@ function Joy(props: JoyProps): React.JSX.Element {
         <EmptyState>Select a publish topic in the panel settings</EmptyState>
       )}
       {enabled && (
-        <JoyVisual
-          advanced={config.advanced}
-          onSpeedChange={(value) => {
-            setSpeed(value);
-          }}
-          xInitial={config.xAxis.initial}
-          yInitial={config.yAxis.initial}
-          xLimit={config.xAxis.limit}
-          yLimit={config.yAxis.limit}
-        />
+        <>
+          <JoyVisual
+            advanced={config.advanced}
+            onSpeedChange={(value) => {
+              setSpeed(value);
+            }}
+            xInitial={config.xAxis.initial}
+            yInitial={config.yAxis.initial}
+            xLimit={config.xAxis.limit}
+            yLimit={config.yAxis.limit}
+          />
+          <strong>Current Time:</strong>{" "}
+          {currentTime ? `${currentTime.sec}.${currentTime.nsec}` : "No time yet"}
+        </>
       )}
     </ThemeProvider>
   );
