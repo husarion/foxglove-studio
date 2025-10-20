@@ -141,6 +141,7 @@ function Joy(props: JoyProps): React.JSX.Element {
   const [speed, setSpeed] = useState<{ x: number; y: number } | undefined>();
   const [topics, setTopics] = useState<readonly Topic[]>([]);
   const [halt, setHalt] = useState<boolean>(false);
+  const [serverTime, setServerTime] = useState<{ uncertainty: number; date?: Date; offset?: number }>({ uncertainty: Number.MAX_VALUE });
 
   // Resolve an initial config which may have some missing fields into a full config
   const [config, setConfig] = useState<Config>(() => {
@@ -231,19 +232,19 @@ function Joy(props: JoyProps): React.JSX.Element {
     };
   }, [context, currentTopic, stamped]);
 
-  const getRosTimestamp = () => {
-    const now = Date.now();
+  const getRosTimestamp = (timeOffset?: number) => {
+    const now = Date.now() + (timeOffset ?? 0);
     return {
       sec: Math.floor(now / 1000),
       nanosec: (now % 1000) * 1e6,
     };
   };
 
-  const createMessage = useCallback(() => {
+  const createMessage = useCallback((timeOffset?: number) => {
     if (config.stamped) {
       return {
         header: {
-          stamp: getRosTimestamp(),
+          stamp: getRosTimestamp(timeOffset),
           frame_id: config.frameId,
         },
         twist: {
@@ -259,6 +260,45 @@ function Joy(props: JoyProps): React.JSX.Element {
     }
   }, [config.frameId, config.stamped]);
 
+  const fetchSampleImplementation = async () => {
+    const requestDate = new Date();
+
+    const { headers, ok, statusText } = await fetch(window.location.href, {
+      cache: `no-store`,
+      method: `HEAD`,
+    });
+
+    if (!ok) {
+      throw new Error(`Bad date sample from server: ${statusText}`);
+    }
+
+    return {
+      requestDate,
+      responseDate: new Date(),
+      serverDate: headers.get(`Date`) ? new Date(headers.get(`Date`)!) : new Date(),
+    };
+  };
+
+  const getServerDate = useCallback(async (
+    { fetchSample }: { fetchSample: typeof fetchSampleImplementation } = { fetchSample: fetchSampleImplementation }
+  ) => {
+
+    const { requestDate, responseDate, serverDate } = await fetchSample();
+
+    // We don't get milliseconds back from the Date header so there's
+    // uncertainty of at least half a second in either direction.
+    const uncertainty = (responseDate.getTime() - requestDate.getTime()) / 2 + 500;
+
+    if (uncertainty < serverTime.uncertainty) {
+      const date = new Date(serverDate.getTime() + 500);
+      setServerTime({
+        date,
+        offset: date.getTime() - responseDate.getTime(),
+        uncertainty,
+      });
+    }
+  }, [serverTime.uncertainty]);
+
   const setTwistValue = useCallback((message: any, axis: Axis, value: number) => {
     const target = config.stamped ? message.twist : message;
     const [category, direction] = axis.field.split("-");
@@ -267,21 +307,30 @@ function Joy(props: JoyProps): React.JSX.Element {
     }
   }, [config.stamped]);
 
+  useEffect(() => {
+    void getServerDate();
+
+    const getServerDatePeriodMs = 310;
+    const serverDateHandle = setInterval(() => {
+      void getServerDate();
+    }, getServerDatePeriodMs);
+
+    return () => { clearInterval(serverDateHandle) };
+  }, [getServerDate]);
+
+
   useLayoutEffect(() => {
     if (speed == undefined || !currentTopic || config.publishRate <= 0) {
       return;
     }
-
     const isStoped = speed.x === 0 && speed.y === 0;
-
     if (isStoped && halt) {
       return;
     }
-
     setHalt(isStoped);
 
     const publishMessage = () => {
-      const message = createMessage();
+      const message = createMessage(serverTime.offset);
       setTwistValue(message, config.xAxis, speed.x);
       setTwistValue(message, config.yAxis, speed.y);
       context.publish?.(currentTopic, message);
@@ -293,7 +342,7 @@ function Joy(props: JoyProps): React.JSX.Element {
     return () => {
       clearInterval(intervalHandle);
     };
-  }, [context, config, currentTopic, speed, halt, createMessage, setTwistValue]);
+  }, [context, config, currentTopic, speed, halt, createMessage, setTwistValue, serverTime.offset]);
 
   useLayoutEffect(() => {
     renderDone();
