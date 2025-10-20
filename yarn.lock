@@ -8806,7 +8806,7 @@ __metadata:
 "comlink@github:foxglove/comlink#9181fa505671b35b1e66e0a8361a6fc1bdd03307":
   version: 4.4.1
   resolution: "comlink@https://github.com/foxglove/comlink.git#commit=9181fa505671b35b1e66e0a8361a6fc1bdd03307"
-  checksum: 1d89d5dee814e71f1cf5d46b5d4b8223bbc598d5b9a82ed53791b4127d35a3473d9cb1a4984e1d034ac6322de0a4dfb72d131529f870604efe79b42f4462dc98
+  checksum: 5e1d3e35fcf074e19eb55926386e37128621ab8395a8052e9b59b95d7272b6c880227ab7bd59c6465500e8a7216851bdf4232191c78bd294ef95ec3bc3406613
   languageName: node
   linkType: hard
 
